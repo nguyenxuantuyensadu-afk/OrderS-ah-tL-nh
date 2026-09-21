@@ -195,15 +195,22 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                 <div className="p-3 sm:p-4 space-y-2 flex-1">
                   <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                     {order.items.map((item, idx) => {
-                      const hasOptions = item.options && (item.options.sweetener || item.options.milkTemp || item.options.sweetness || item.options.itemNote || item.itemNote);
+                      const hasOptions = item.options && (item.options.size || item.options.sweetener || item.options.milkTemp || item.options.sweetness || item.options.itemNote || item.itemNote);
                       const noteText = item.options?.itemNote || item.itemNote;
 
                       return (
                         <div key={item.cartItemId || idx} className="py-1.5 border-b border-gray-100 last:border-none">
                           <div className="flex items-center justify-between text-xs sm:text-sm">
-                            <div className="flex items-center gap-1.5 min-w-0">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                               <span className="font-black text-amber-600 w-5 shrink-0">{item.quantity}x</span>
                               <span className="font-bold text-gray-800 truncate">{item.name}</span>
+                              {item.options?.size && (
+                                <span className={`px-1.5 py-0.2 rounded font-black text-[10px] uppercase shrink-0 ${
+                                  item.options.size === 'L' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}>
+                                  Size {item.options.size}
+                                </span>
+                              )}
                             </div>
                             <span className="text-gray-600 text-xs font-semibold shrink-0 ml-2">
                               {formatCurrency(item.price * item.quantity)}
@@ -213,6 +220,13 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                           {/* Options pills */}
                           {hasOptions && (
                             <div className="flex flex-wrap gap-1 mt-1 pl-6 text-[10px]">
+                              {item.options?.size && (
+                                <span className={`px-1.5 py-0.5 rounded font-bold ${
+                                  item.options.size === 'L' ? 'bg-purple-50 text-purple-800' : 'bg-amber-50 text-amber-800'
+                                }`}>
+                                  Size {item.options.size}
+                                </span>
+                              )}
                               {item.options?.milkTemp && (
                                 <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold">
                                   {item.options.milkTemp}
@@ -300,18 +314,30 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                   <span>THÀNH TIỀN</span>
                 </div>
                 {payingOrder.items.map((item, i) => {
-                  const hasOptions = item.options && (item.options.sweetener || item.options.milkTemp || item.options.sweetness || item.options.itemNote || item.itemNote);
+                  const hasOptions = item.options && (item.options.size || item.options.sweetener || item.options.milkTemp || item.options.sweetness || item.options.itemNote || item.itemNote);
                   const noteText = item.options?.itemNote || item.itemNote;
 
                   return (
                     <div key={i} className="py-1.5 border-b border-gray-100 last:border-none">
                       <div className="flex justify-between text-xs sm:text-sm">
-                        <span className="font-semibold text-gray-800 flex-1 truncate pr-2">{item.name}</span>
+                        <div className="flex-1 truncate pr-2 flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-gray-800">{item.name}</span>
+                          {item.options?.size && (
+                            <span className={`px-1.5 py-0.2 rounded font-black text-[10px] uppercase shrink-0 ${
+                              item.options.size === 'L' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              Size {item.options.size}
+                            </span>
+                          )}
+                        </div>
                         <span className="w-8 text-center text-gray-600">{item.quantity}</span>
                         <span className="font-bold text-gray-700">{formatCurrency(item.price * item.quantity)}</span>
                       </div>
                       {hasOptions && (
                         <div className="flex flex-wrap gap-1 text-[10px] text-gray-500 mt-0.5">
+                          {item.options?.size && (
+                            <span className="font-bold text-purple-700">• Size {item.options.size}</span>
+                          )}
                           {item.options?.milkTemp && <span>• {item.options.milkTemp}</span>}
                           {item.options?.sweetener && <span>• {item.options.sweetener}</span>}
                           {item.options?.sweetness && <span>• {item.options.sweetness}</span>}

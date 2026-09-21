@@ -1,6 +1,6 @@
 import { useState, FormEvent, useEffect } from 'react';
-import { MenuItem } from '../types';
-import { X, Trash2, SlidersHorizontal, AlertCircle, Save } from 'lucide-react';
+import { MenuItem, isMatchaOrCoffee } from '../types';
+import { X, Trash2, SlidersHorizontal, AlertCircle, Save, Layers } from 'lucide-react';
 import { formatCurrency } from '../data';
 
 interface MenuItemModalProps {
@@ -16,7 +16,7 @@ export default function MenuItemModal({
   isOpen,
   onClose,
   item,
-  categories = ['Cà phê', 'Trà', 'Trà sữa', 'Sinh tố', 'Nước ép', 'Đồ ăn nhẹ'],
+  categories = ['Cà phê', 'Matcha', 'Trà', 'Trà sữa', 'Sinh tố', 'Nước ép', 'Đồ ăn nhẹ'],
   onSave,
   onDelete
 }: MenuItemModalProps) {
@@ -24,6 +24,8 @@ export default function MenuItemModal({
   const [category, setCategory] = useState('');
   const [priceStr, setPriceStr] = useState('');
   const [hasOptions, setHasOptions] = useState(true);
+  const [hasSizes, setHasSizes] = useState(false);
+  const [priceLStr, setPriceLStr] = useState('');
   
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -37,11 +39,18 @@ export default function MenuItemModal({
         setCategory(item.category);
         setPriceStr(item.price.toString());
         setHasOptions(item.hasOptions !== false);
+        const shouldHaveSizes = item.hasSizes ?? isMatchaOrCoffee(item.category, item.name);
+        setHasSizes(shouldHaveSizes);
+        setPriceLStr(item.priceL ? item.priceL.toString() : (item.price + 5000).toString());
       } else {
         setName('');
-        setCategory(categories[0] || 'Cà phê');
+        const defaultCat = categories[0] || 'Cà phê';
+        setCategory(defaultCat);
         setPriceStr('');
         setHasOptions(true);
+        const shouldHaveSizes = isMatchaOrCoffee(defaultCat, '');
+        setHasSizes(shouldHaveSizes);
+        setPriceLStr('');
       }
       setShowConfirmDelete(false);
       setError('');
@@ -74,6 +83,12 @@ export default function MenuItemModal({
       return;
     }
 
+    const parsedPriceL = parseInt(priceLStr.replace(/\D/g, ''), 10) || (parsedPrice + 5000);
+    if (hasSizes && parsedPriceL <= 0) {
+      setError('Giá Size L phải lớn hơn 0 VNĐ.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const savedItem: MenuItem = {
@@ -81,7 +96,9 @@ export default function MenuItemModal({
         name: cleanName,
         category: cleanCategory,
         price: parsedPrice,
-        hasOptions
+        hasOptions,
+        hasSizes,
+        priceL: hasSizes ? parsedPriceL : undefined,
       };
 
       await onSave(savedItem);
@@ -184,7 +201,15 @@ export default function MenuItemModal({
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => setCategory(c)}
+                  onClick={() => {
+                    setCategory(c);
+                    if (isMatchaOrCoffee(c, name)) {
+                      setHasSizes(true);
+                      if (!priceLStr && parsedPrice > 0) {
+                        setPriceLStr((parsedPrice + 5000).toString());
+                      }
+                    }
+                  }}
                   className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all active:scale-95 ${
                     category === c 
                       ? 'bg-amber-500 text-white shadow-xs' 
@@ -242,6 +267,62 @@ export default function MenuItemModal({
               </p>
             </div>
           </label>
+
+          {/* Has Sizes Checkbox & Price L */}
+          <div className="p-3 rounded-2xl border border-purple-200 bg-purple-50/40 space-y-2.5">
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={hasSizes}
+                onChange={e => {
+                  setHasSizes(e.target.checked);
+                  if (e.target.checked && !priceLStr) {
+                    setPriceLStr((parsedPrice + 5000).toString());
+                  }
+                }}
+                className="w-4 h-4 mt-0.5 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
+              />
+              <div className="text-xs">
+                <p className="font-bold text-gray-900 flex items-center gap-1.5">
+                  <Layers size={14} className="text-purple-600" />
+                  <span>Hỗ trợ kích cỡ (Size M & Size L)</span>
+                  <span className="text-[10px] font-extrabold bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded">
+                    Matcha & Cà phê
+                  </span>
+                </p>
+                <p className="text-gray-500 mt-0.5 leading-relaxed">
+                  Bật tùy chọn này để khách hàng có thể chọn kích cỡ ly M (vừa) hoặc L (lớn).
+                </p>
+              </div>
+            </label>
+
+            {hasSizes && (
+              <div className="pt-2 border-t border-purple-100 flex flex-col gap-1 pl-7 animate-in fade-in">
+                <label className="block text-xs font-bold text-purple-950">
+                  Giá bán Size L (VNĐ) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={priceLStr}
+                    onChange={e => setPriceLStr(e.target.value)}
+                    className="w-full border border-purple-300 rounded-xl pl-3.5 pr-14 py-2 text-sm font-mono font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+                    placeholder={(parsedPrice + 5000).toString()}
+                  />
+                  <span className="absolute right-3.5 text-xs font-bold text-purple-400 select-none">
+                    VNĐ
+                  </span>
+                </div>
+                <p className="text-[11px] text-purple-700 font-medium">
+                  • Size M: <strong className="font-bold">{formatCurrency(parsedPrice)}</strong>
+                  {' — '}
+                  • Size L: <strong className="font-bold">{formatCurrency(parseInt(priceLStr.replace(/\D/g, ''), 10) || (parsedPrice + 5000))}</strong>
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Danger Zone: Delete Confirmation when Editing */}
           {item && onDelete && (

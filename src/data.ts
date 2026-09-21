@@ -1,10 +1,14 @@
 import { MenuItem, PaymentSettings, PreparationOptionsSettings } from './types';
 
 export const defaultMenu: MenuItem[] = [
-  { id: '1', name: 'Cà phê đen', price: 20000, category: 'Cà phê', hasOptions: true },
-  { id: '2', name: 'Cà phê sữa đá', price: 25000, category: 'Cà phê', hasOptions: true },
-  { id: '3', name: 'Bạc xỉu', price: 25000, category: 'Cà phê', hasOptions: true },
-  { id: '4', name: 'Cà phê muối', price: 30000, category: 'Cà phê', hasOptions: true },
+  { id: '1', name: 'Cà phê đen', price: 20000, category: 'Cà phê', hasOptions: true, hasSizes: true, priceL: 25000 },
+  { id: '2', name: 'Cà phê sữa đá', price: 25000, category: 'Cà phê', hasOptions: true, hasSizes: true, priceL: 30000 },
+  { id: '3', name: 'Bạc xỉu', price: 25000, category: 'Cà phê', hasOptions: true, hasSizes: true, priceL: 30000 },
+  { id: '4', name: 'Cà phê muối', price: 30000, category: 'Cà phê', hasOptions: true, hasSizes: true, priceL: 35000 },
+  { id: 'm1', name: 'Matcha Latte', price: 35000, category: 'Matcha', hasOptions: true, hasSizes: true, priceL: 40000 },
+  { id: 'm2', name: 'Matcha Đá Xay', price: 40000, category: 'Matcha', hasOptions: true, hasSizes: true, priceL: 45000 },
+  { id: 'm3', name: 'Trà Sữa Matcha', price: 35000, category: 'Matcha', hasOptions: true, hasSizes: true, priceL: 40000 },
+  { id: 'm4', name: 'Matcha Espresso', price: 42000, category: 'Matcha', hasOptions: true, hasSizes: true, priceL: 47000 },
   { id: '5', name: 'Trà đào cam sả', price: 35000, category: 'Trà', hasOptions: true },
   { id: '6', name: 'Trà vải', price: 35000, category: 'Trà', hasOptions: true },
   { id: '7', name: 'Trà ô long sen vàng', price: 40000, category: 'Trà', hasOptions: true },

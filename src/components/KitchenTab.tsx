@@ -183,7 +183,7 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                   </div>
 
                   {order.items.map((item, i) => {
-                    const hasOptions = item.options && (item.options.sweetener || item.options.milkTemp || item.options.sweetness || item.options.itemNote || item.itemNote);
+                    const hasOptions = item.options && (item.options.size || item.options.sweetener || item.options.milkTemp || item.options.sweetness || item.options.itemNote || item.itemNote);
                     const noteText = item.options?.itemNote || item.itemNote;
 
                     return (
@@ -197,7 +197,18 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                               {item.quantity}
                             </span>
                             <div className="min-w-0">
-                              <p className="font-black text-gray-900 text-xs sm:text-sm truncate">{item.name}</p>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="font-black text-gray-900 text-xs sm:text-sm truncate">{item.name}</p>
+                                {item.options?.size && (
+                                  <span className={`px-2 py-0.5 rounded-md font-black text-xs uppercase shrink-0 shadow-2xs ${
+                                    item.options.size === 'L' 
+                                      ? 'bg-purple-600 text-white' 
+                                      : 'bg-amber-500 text-white'
+                                  }`}>
+                                    Size {item.options.size}
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-gray-400 font-medium">{item.category}</span>
                             </div>
                           </div>
@@ -206,6 +217,14 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                         {/* Pha chế options for Kitchen */}
                         {hasOptions && (
                           <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-200/60 text-[11px]">
+                            {item.options?.size && (
+                              <span className={`px-2 py-0.5 rounded-md font-black text-xs ${
+                                item.options.size === 'L' ? 'bg-purple-100 text-purple-900 border border-purple-200' : 'bg-amber-100 text-amber-900 border border-amber-200'
+                              }`}>
+                                Size: {item.options.size}
+                              </span>
+                            )}
+
                             {item.options?.milkTemp && (
                               <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md font-bold text-xs bg-blue-100 text-blue-800">
                                 {item.options.milkTemp.includes('Lạnh') ? <Snowflake size={12} /> : <Flame size={12} />}

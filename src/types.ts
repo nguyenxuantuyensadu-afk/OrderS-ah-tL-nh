@@ -13,14 +13,28 @@ export interface MenuItem {
   category: string;
   image?: string;
   hasOptions?: boolean; // defaults to true, can be turned off for items without options
+  hasSizes?: boolean; // whether item has size M & L
+  priceL?: number; // optional custom price for size L (defaults to price + 5000)
 }
 
 export interface ItemOptions {
+  size?: 'M' | 'L' | string;
   sweetener?: string;
   milkTemp?: string;
   sweetness?: string;
   itemNote?: string;
 }
+
+export const isMatchaOrCoffee = (category?: string, name?: string): boolean => {
+  const str = `${category || ''} ${name || ''}`.toLowerCase();
+  return str.includes('matcha') || str.includes('cà phê') || str.includes('cafe') || str.includes('coffee');
+};
+
+export const itemSupportsSizes = (item?: { category?: string; name?: string; hasSizes?: boolean } | null): boolean => {
+  if (!item) return false;
+  if (item.hasSizes === true) return true;
+  return isMatchaOrCoffee(item.category, item.name);
+};
 
 export interface PaymentSettings {
   bankId?: string; // VietQR Bank code like VCB, MB, TCB, etc.

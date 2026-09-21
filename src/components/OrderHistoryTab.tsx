@@ -332,9 +332,16 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
                     <div className="space-y-1 text-xs">
                       {order.items.slice(0, 3).map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center text-gray-700">
-                          <span className="truncate pr-2">
-                            <strong className="text-amber-800 mr-1">{item.quantity}x</strong>
-                            <span>{item.name}</span>
+                          <span className="truncate pr-2 flex items-center gap-1">
+                            <strong className="text-amber-800 mr-1 shrink-0">{item.quantity}x</strong>
+                            <span className="truncate">{item.name}</span>
+                            {item.options?.size && (
+                              <span className={`px-1 py-0.2 rounded font-black text-[9px] uppercase shrink-0 ${
+                                item.options.size === 'L' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                Size {item.options.size}
+                              </span>
+                            )}
                           </span>
                           <span className="font-medium text-gray-500 shrink-0">
                             {formatCurrency(item.price * item.quantity)}
@@ -465,11 +472,18 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
                   {selectedOrder.items.map((item, idx) => (
                     <div key={idx} className="p-3 space-y-1.5 hover:bg-gray-50/60 transition-colors">
                       <div className="flex justify-between items-start gap-2">
-                        <div className="font-bold text-gray-800 text-sm">
-                          <span className="text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded mr-1.5 text-xs">
+                        <div className="font-bold text-gray-800 text-sm flex items-center gap-1.5 flex-wrap">
+                          <span className="text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded mr-1 text-xs">
                             {item.quantity}x
                           </span>
                           <span>{item.name}</span>
+                          {item.options?.size && (
+                            <span className={`px-2 py-0.5 rounded-md font-black text-xs uppercase shrink-0 ${
+                              item.options.size === 'L' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-amber-100 text-amber-800 border border-amber-200'
+                            }`}>
+                              Size {item.options.size}
+                            </span>
+                          )}
                         </div>
                         <div className="font-bold text-gray-900 text-sm shrink-0">
                           {formatCurrency(item.price * item.quantity)}
@@ -477,8 +491,13 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
                       </div>
 
                       {/* Item Options Details */}
-                      {(item.options?.sweetness || item.options?.milkTemp || item.options?.sweetener || item.options?.itemNote) && (
+                      {(item.options?.size || item.options?.sweetness || item.options?.milkTemp || item.options?.sweetener || item.options?.itemNote) && (
                         <div className="flex flex-wrap gap-1 pt-0.5 pl-6">
+                          {item.options.size && (
+                            <span className="text-[11px] font-bold bg-purple-50 text-purple-800 px-2 py-0.5 rounded-md border border-purple-100">
+                              Kích cỡ: Size {item.options.size}
+                            </span>
+                          )}
                           {item.options.sweetness && (
                             <span className="text-[11px] font-semibold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-md">
                               {item.options.sweetness}

@@ -1,5 +1,5 @@
 import { useState, MouseEvent } from 'react';
-import { MenuItem, CartItem, ItemOptions, PreparationOptionsSettings } from '../types';
+import { MenuItem, CartItem, ItemOptions, PreparationOptionsSettings, itemSupportsSizes } from '../types';
 import { formatCurrency, defaultPreparationOptions } from '../data';
 import ItemCustomizeModal from './ItemCustomizeModal';
 import MenuItemModal from './MenuItemModal';
@@ -77,6 +77,7 @@ export default function OrderTab({
   // Helper to compare options
   const areOptionsEqual = (opt1?: ItemOptions, opt2?: ItemOptions) => {
     return (
+      (opt1?.size || '') === (opt2?.size || '') &&
       (opt1?.sweetener || '') === (opt2?.sweetener || '') &&
       (opt1?.milkTemp || '') === (opt2?.milkTemp || '') &&
       (opt1?.sweetness || '') === (opt2?.sweetness || '') &&
@@ -86,6 +87,13 @@ export default function OrderTab({
 
   // Confirm custom choices from modal
   const handleConfirmCustomize = (item: MenuItem, options: ItemOptions, quantity: number) => {
+    const hasSizes = itemSupportsSizes(item);
+    const sizePrice = (hasSizes && options.size === 'L') ? (item.priceL || item.price + 5000) : item.price;
+    const finalItem: MenuItem = {
+      ...item,
+      price: sizePrice,
+    };
+
     setCart(prev => {
       if (editingCartItem) {
         // Editing existing cart item
@@ -93,6 +101,7 @@ export default function OrderTab({
           if (ci.cartItemId === editingCartItem.cartItemId) {
             const updated: CartItem = {
               ...ci,
+              price: sizePrice,
               options,
               quantity,
             };
@@ -113,6 +122,7 @@ export default function OrderTab({
         const updated = [...prev];
         updated[existingIndex] = {
           ...updated[existingIndex],
+          price: sizePrice,
           quantity: updated[existingIndex].quantity + quantity,
         };
         return updated;
@@ -120,7 +130,7 @@ export default function OrderTab({
 
       // Add new cart item with unique cartItemId
       const newCartItem: CartItem = {
-        ...item,
+        ...finalItem,
         cartItemId: `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         quantity,
         options,
@@ -170,8 +180,10 @@ export default function OrderTab({
     // Default options
     const isCoffee = item.category.toLowerCase().includes('cà phê') || item.name.toLowerCase().includes('cà phê');
     const defaultSweetener = (isCoffee && item.name.toLowerCase().includes('sữa')) ? 'Sữa đặc' : 'Đường cát';
+    const hasSizes = itemSupportsSizes(item);
 
     const defaultOptions: ItemOptions = {
+      size: hasSizes ? 'M' : undefined,
       sweetener: defaultSweetener,
       milkTemp: 'Đá (Lạnh)',
       sweetness: '100% ngọt',
@@ -358,9 +370,16 @@ export default function OrderTab({
                 )}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="inline-block px-2 py-0.5 bg-amber-50 text-amber-700 font-bold text-[10px] sm:text-[11px] rounded-md">
-                      {item.category}
-                    </span>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="inline-block px-2 py-0.5 bg-amber-50 text-amber-700 font-bold text-[10px] sm:text-[11px] rounded-md">
+                        {item.category}
+                      </span>
+                      {itemSupportsSizes(item) && (
+                        <span className="inline-block px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200/80 font-black text-[10px] rounded-md">
+                          Size M, L
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1">
                       {item.hasOptions !== false ? (
                         <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5 opacity-80 group-hover:opacity-100">
@@ -596,8 +615,17 @@ export default function OrderTab({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <h4 className="font-black text-gray-800 text-xs sm:text-sm truncate">{item.name}</h4>
+                        {item.options?.size && (
+                          <span className={`px-1.5 py-0.2 rounded font-black text-[10px] uppercase shrink-0 ${
+                            item.options.size === 'L' 
+                              ? 'bg-purple-100 text-purple-800 border border-purple-200' 
+                              : 'bg-amber-100 text-amber-800 border border-amber-200'
+                          }`}>
+                            Size {item.options.size}
+                          </span>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleOpenCustomize(item, item)}
@@ -632,6 +660,14 @@ export default function OrderTab({
                   {/* Badges for selected options: Sweetener, Milk/Temp, Sweetness */}
                   {hasOptions && (
                     <div className="pt-1.5 border-t border-gray-100 flex flex-wrap items-center gap-1 text-[11px]">
+                      {item.options?.size && (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md font-bold ${
+                          item.options.size === 'L' ? 'bg-purple-50 text-purple-800' : 'bg-amber-50 text-amber-800'
+                        }`}>
+                          Size {item.options.size}
+                        </span>
+                      )}
+
                       {item.options?.milkTemp && (
                         <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold">
                           {item.options.milkTemp.includes('Lạnh') ? <Snowflake size={11} /> : <Flame size={11} />}

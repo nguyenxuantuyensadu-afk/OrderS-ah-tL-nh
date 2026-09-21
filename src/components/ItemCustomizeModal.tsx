@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MenuItem, ItemOptions, PreparationOptionsSettings } from '../types';
+import { MenuItem, ItemOptions, PreparationOptionsSettings, itemSupportsSizes } from '../types';
 import { formatCurrency, defaultPreparationOptions } from '../data';
 import { X, Check, Flame, Snowflake, Sparkles } from 'lucide-react';
 
@@ -35,6 +35,11 @@ export default function ItemCustomizeModal({
   const defaultMilkTemp = milkTemps[0]?.label || 'Đá (Lạnh)';
   const defaultSweetness = sweetnessLevels[0]?.label || '100% ngọt';
 
+  const hasSizes = itemSupportsSizes(item);
+  const priceM = item?.price || 0;
+  const priceL = item?.priceL || (priceM + 5000);
+
+  const [size, setSize] = useState<'M' | 'L'>('M');
   const [sweetener, setSweetener] = useState<string>(defaultSweetener);
   const [milkTemp, setMilkTemp] = useState<string>(defaultMilkTemp);
   const [sweetness, setSweetness] = useState<string>(defaultSweetness);
@@ -45,11 +50,13 @@ export default function ItemCustomizeModal({
   useEffect(() => {
     if (isOpen && item) {
       if (initialOptions) {
+        setSize(initialOptions.size === 'L' ? 'L' : 'M');
         setSweetener(initialOptions.sweetener || defaultSweetener);
         setMilkTemp(initialOptions.milkTemp || defaultMilkTemp);
         setSweetness(initialOptions.sweetness || defaultSweetness);
         setItemNote(initialOptions.itemNote || '');
       } else {
+        setSize('M');
         // Defaults based on category
         const isCoffee = item.category.toLowerCase().includes('cà phê') || item.name.toLowerCase().includes('cà phê');
 
@@ -70,6 +77,8 @@ export default function ItemCustomizeModal({
 
   if (!isOpen || !item) return null;
 
+  const currentUnitPrice = (hasSizes && size === 'L') ? priceL : priceM;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const options: ItemOptions = {
@@ -77,11 +86,18 @@ export default function ItemCustomizeModal({
       milkTemp,
       sweetness,
     };
+    if (hasSizes) {
+      options.size = size;
+    }
     const trimmedNote = itemNote.trim();
     if (trimmedNote) {
       options.itemNote = trimmedNote;
     }
-    onConfirm(item, options, quantity);
+    const finalItem: MenuItem = {
+      ...item,
+      price: currentUnitPrice,
+    };
+    onConfirm(finalItem, options, quantity);
     onClose();
   };
 
@@ -113,6 +129,79 @@ export default function ItemCustomizeModal({
         {/* Form Body */}
         <form id="customize-form" onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5">
           
+          {/* 0. Chọn Size (Size M & Size L cho Matcha & Cà phê) */}
+          {hasSizes && (
+            <div className="bg-amber-50/60 p-3 sm:p-3.5 rounded-2xl border border-amber-200/80">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-600"></span>
+                  <span>Chọn Size (Kích cỡ)</span>
+                </label>
+                <span className="text-[11px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full">
+                  Bắt buộc
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Size M */}
+                <button
+                  type="button"
+                  onClick={() => setSize('M')}
+                  className={`p-3 rounded-xl border-2 text-left transition-all touch-manipulation relative flex flex-col justify-between ${
+                    size === 'M'
+                      ? 'border-amber-500 bg-white text-amber-950 shadow-xs ring-2 ring-amber-400/20'
+                      : 'border-gray-200 bg-white/70 text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${
+                        size === 'M' ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700'
+                      }`}>
+                        M
+                      </span>
+                      <span className="font-extrabold text-xs sm:text-sm">Size M (Vừa)</span>
+                    </div>
+                    {size === 'M' && <Check size={16} className="text-amber-600 shrink-0" />}
+                  </div>
+                  <div className="mt-2 flex items-baseline justify-between pt-1.5 border-t border-gray-100">
+                    <span className="text-[11px] text-gray-400 font-medium">Tiêu chuẩn</span>
+                    <span className="text-xs font-black text-amber-700">{formatCurrency(priceM)}</span>
+                  </div>
+                </button>
+
+                {/* Size L */}
+                <button
+                  type="button"
+                  onClick={() => setSize('L')}
+                  className={`p-3 rounded-xl border-2 text-left transition-all touch-manipulation relative flex flex-col justify-between ${
+                    size === 'L'
+                      ? 'border-purple-500 bg-white text-purple-950 shadow-xs ring-2 ring-purple-400/20'
+                      : 'border-gray-200 bg-white/70 text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${
+                        size === 'L' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
+                      }`}>
+                        L
+                      </span>
+                      <span className="font-extrabold text-xs sm:text-sm">Size L (Lớn)</span>
+                    </div>
+                    {size === 'L' && <Check size={16} className="text-purple-600 shrink-0" />}
+                  </div>
+                  <div className="mt-2 flex items-baseline justify-between pt-1.5 border-t border-gray-100">
+                    <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.2 rounded">
+                      +{formatCurrency(priceL - priceM)}
+                    </span>
+                    <span className="text-xs font-black text-purple-700">{formatCurrency(priceL)}</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* 1. Sữa Nóng / Lạnh */}
           {milkTemps.length > 0 && (
             <div>
@@ -306,9 +395,11 @@ export default function ItemCustomizeModal({
         {/* Footer */}
         <div className="p-3.5 sm:p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3 shrink-0">
           <div className="leading-tight">
-            <span className="text-[11px] text-gray-400 font-medium">Tổng tiền món:</span>
+            <span className="text-[11px] text-gray-500 font-medium">
+              {hasSizes ? `Đơn giá (${size === 'L' ? 'Size L' : 'Size M'}): ${formatCurrency(currentUnitPrice)}` : 'Tổng tiền món:'}
+            </span>
             <p className="text-lg sm:text-xl font-black text-amber-600">
-              {formatCurrency(item.price * quantity)}
+              {formatCurrency(currentUnitPrice * quantity)}
             </p>
           </div>
 
@@ -326,7 +417,19 @@ export default function ItemCustomizeModal({
                 const isCoffee = item.category.toLowerCase().includes('cà phê') || item.name.toLowerCase().includes('cà phê');
                 const condensedMilkOption = sweeteners.find(s => s.label.toLowerCase().includes('sữa đặc'))?.label;
                 const defSweet = (isCoffee && item.name.toLowerCase().includes('sữa') && condensedMilkOption) ? condensedMilkOption : defaultSweetener;
-                onConfirm(item, { sweetener: defSweet, milkTemp: defaultMilkTemp, sweetness: defaultSweetness }, quantity);
+                const finalOptions: ItemOptions = { 
+                  sweetener: defSweet, 
+                  milkTemp: defaultMilkTemp, 
+                  sweetness: defaultSweetness 
+                };
+                if (hasSizes) {
+                  finalOptions.size = size;
+                }
+                const finalItem: MenuItem = {
+                  ...item,
+                  price: currentUnitPrice
+                };
+                onConfirm(finalItem, finalOptions, quantity);
                 onClose();
               }}
               title="Thêm với công thức chuẩn"
