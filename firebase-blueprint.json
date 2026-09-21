@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role management",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff"] },
+        "displayName": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    },
+    "MenuItem": {
+      "title": "MenuItem",
+      "description": "A food or drink item on the POS menu",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "required": ["id", "name", "price", "category"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A restaurant order with kitchen and serving workflow",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "number" },
+        "table": { "type": "string" },
+        "customerName": { "type": "string" },
+        "note": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "readyAt": { "type": "number" },
+        "completedAt": { "type": "number" },
+        "status": { "type": "string", "enum": ["in_kitchen", "ready", "completed", "cancelled"] },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cash", "transfer"] },
+        "createdBy": { "type": "string" },
+        "createdByName": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "items", "total", "status"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "App settings including payment QR and preparation options",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "updatedAt": { "type": "number" },
+        "qrImageUrl": { "type": "string" },
+        "bankId": { "type": "string" },
+        "accountNo": { "type": "string" },
+        "accountName": { "type": "string" },
+        "sweeteners": { "type": "array" },
+        "milkTemps": { "type": "array" },
+        "sweetnessLevels": { "type": "array" },
+        "quickNotes": { "type": "array" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile records and authorization roles"
+    },
+    "/menu/{itemId}": {
+      "schema": { "$ref": "#/entities/MenuItem" },
+      "description": "Menu items available for ordering"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Customer orders and transactions"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/AppSettings" },
+      "description": "Payment QR and custom options settings"
+    }
+  }
+}
