@@ -38,9 +38,9 @@ export default function App() {
   const [optionsSettings, setOptionsSettings] = useState<PreparationOptionsSettings>(defaultPreparationOptions);
   const [dataLoading, setDataLoading] = useState<boolean>(true);
 
-  // Security guard: If non-admin tries to access revenue or admin, redirect to order
+  // Security guard: If non-admin tries to access admin settings, redirect to order
   useEffect(() => {
-    if (user && user.role !== 'admin' && (activeTab === 'revenue' || activeTab === 'admin')) {
+    if (user && user.role !== 'admin' && activeTab === 'admin') {
       setActiveTab('order');
     }
   }, [user, activeTab]);
@@ -64,16 +64,17 @@ export default function App() {
             if (docSnap.exists()) {
               const data = docSnap.data();
               const username = data.username || (currentUser.email?.endsWith('@posmini.local') ? currentUser.email.replace('@posmini.local', '') : undefined);
+              const isOwnerAdmin = currentUser.email === 'nguyenxuantuyensadu@gmail.com' || (username && username.toLowerCase() === 'admin');
               setUser({
                 uid: currentUser.uid,
                 email: currentUser.email || '',
                 username,
-                role: data.role || 'staff',
+                role: isOwnerAdmin ? 'admin' : (data.role || 'staff'),
                 displayName: currentUser.displayName || data.displayName || username || currentUser.email?.split('@')[0]
               });
             } else {
               const username = currentUser.email?.endsWith('@posmini.local') ? currentUser.email.replace('@posmini.local', '') : undefined;
-              const isOwnerAdmin = currentUser.email === 'nguyenxuantuyensadu@gmail.com';
+              const isOwnerAdmin = currentUser.email === 'nguyenxuantuyensadu@gmail.com' || (username && username.toLowerCase() === 'admin');
               const newUser: AppUser = {
                 uid: currentUser.uid,
                 email: currentUser.email || '',
@@ -457,22 +458,20 @@ export default function App() {
             </div>
           </button>
           
-          {/* Tab 5: Doanh thu (Chỉ Quản trị viên mới xem được) */}
-          {user.role === 'admin' && (
-            <button
-              onClick={() => setActiveTab('revenue')}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all font-bold text-sm ${
-                activeTab === 'revenue' 
-                  ? 'bg-gray-900 text-white shadow-md' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <DollarSign size={20} className={activeTab === 'revenue' ? 'text-white' : 'text-gray-400'} />
-                <span>Doanh thu</span>
-              </div>
-            </button>
-          )}
+          {/* Tab 5: Doanh thu */}
+          <button
+            onClick={() => setActiveTab('revenue')}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all font-bold text-sm ${
+              activeTab === 'revenue' 
+                ? 'bg-emerald-700 text-white shadow-md shadow-emerald-200' 
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <DollarSign size={20} className={activeTab === 'revenue' ? 'text-white' : 'text-gray-400'} />
+              <span>Doanh thu</span>
+            </div>
+          </button>
           
           {/* Tab 6: Quản trị (Admin) */}
           {user.role === 'admin' && (
@@ -494,19 +493,33 @@ export default function App() {
       </aside>
 
       {/* Top Header on Mobile (< md) */}
-      <header className="md:hidden bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-2.5">
+      <header className="md:hidden bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-xs">
             <Store size={18} strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-base font-black text-gray-800 leading-tight">POS Mini</h1>
+            <h1 className="text-sm font-black text-gray-800 leading-tight">POS Mini</h1>
             <p className="text-[10px] font-bold text-amber-600 uppercase">Takeaway</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-gray-700 max-w-[120px] truncate">
+        <div className="flex items-center gap-1.5">
+          {/* Quick Revenue Shortcut in Mobile Header */}
+          <button
+            onClick={() => setActiveTab('revenue')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'revenue'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60'
+            }`}
+            title="Báo cáo doanh thu"
+          >
+            <DollarSign size={13} className={activeTab === 'revenue' ? 'text-white' : 'text-emerald-600'} />
+            <span className="text-[11px]">Doanh thu</span>
+          </button>
+
+          <span className="text-xs font-bold text-gray-700 max-w-[90px] truncate hidden sm:inline-block">
             {user.displayName || user.username || (user.email?.endsWith('@posmini.local') ? user.email.replace('@posmini.local', '') : user.email)}
           </span>
           <button 
@@ -553,7 +566,7 @@ export default function App() {
                 userRole={user.role} 
               />
             )}
-            {activeTab === 'revenue' && user.role === 'admin' && (
+            {activeTab === 'revenue' && (
               <RevenueTab orders={orders} />
             )}
             {activeTab === 'admin' && user.role === 'admin' && (
@@ -580,75 +593,86 @@ export default function App() {
       </main>
 
       {/* Mobile Bottom Navigation Bar (< md) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-200 flex items-center justify-around px-1 z-30 shadow-lg">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-200 flex items-center justify-around px-0.5 z-30 shadow-lg">
         {/* Nav 1: Gọi món */}
         <button
           onClick={() => setActiveTab('order')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors min-w-0 ${
             activeTab === 'order' ? 'text-amber-600 font-black' : 'text-gray-500 font-medium'
           }`}
         >
-          <Coffee size={20} className={activeTab === 'order' ? 'text-amber-600' : 'text-gray-400'} />
-          <span className="text-[10px] mt-1">Gọi món</span>
+          <Coffee size={19} className={activeTab === 'order' ? 'text-amber-600' : 'text-gray-400'} />
+          <span className="text-[10px] mt-0.5 truncate max-w-full text-center">Gọi món</span>
         </button>
 
         {/* Nav 2: Bếp */}
         <button
           onClick={() => setActiveTab('kitchen')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 relative transition-colors ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 relative transition-colors min-w-0 ${
             activeTab === 'kitchen' ? 'text-orange-600 font-black' : 'text-gray-500 font-medium'
           }`}
         >
           <div className="relative">
-            <ChefHat size={20} className={activeTab === 'kitchen' ? 'text-orange-600' : 'text-gray-400'} />
+            <ChefHat size={19} className={activeTab === 'kitchen' ? 'text-orange-600' : 'text-gray-400'} />
             {kitchenCount > 0 && (
               <span className="absolute -top-1.5 -right-2 bg-orange-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
                 {kitchenCount}
               </span>
             )}
           </div>
-          <span className="text-[10px] mt-1">Bếp</span>
+          <span className="text-[10px] mt-0.5 truncate max-w-full text-center">Bếp</span>
         </button>
 
         {/* Nav 3: Giao đồ & Tính tiền */}
         <button
           onClick={() => setActiveTab('serving')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 relative transition-colors ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 relative transition-colors min-w-0 ${
             activeTab === 'serving' ? 'text-green-600 font-black' : 'text-gray-500 font-medium'
           }`}
         >
           <div className="relative">
-            <ShoppingBag size={20} className={activeTab === 'serving' ? 'text-green-600' : 'text-gray-400'} />
+            <ShoppingBag size={19} className={activeTab === 'serving' ? 'text-green-600' : 'text-gray-400'} />
             {readyCount > 0 && (
               <span className="absolute -top-1.5 -right-2 bg-green-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
                 {readyCount}
               </span>
             )}
           </div>
-          <span className="text-[10px] mt-1">Thu tiền</span>
+          <span className="text-[10px] mt-0.5 truncate max-w-full text-center">Thu tiền</span>
         </button>
 
-        {/* Nav 4: Lịch sử đối soát đơn hàng (Cho nhân viên & quản trị viên) */}
+        {/* Nav 4: Lịch sử đối soát đơn hàng */}
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            activeTab === 'history' ? 'text-amber-600 font-black' : 'text-gray-500 font-medium'
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors min-w-0 ${
+            activeTab === 'history' ? 'text-blue-600 font-black' : 'text-gray-500 font-medium'
           }`}
         >
-          <History size={20} className={activeTab === 'history' ? 'text-amber-600' : 'text-gray-400'} />
-          <span className="text-[10px] mt-1">Lịch sử</span>
+          <History size={19} className={activeTab === 'history' ? 'text-blue-600' : 'text-gray-400'} />
+          <span className="text-[10px] mt-0.5 truncate max-w-full text-center">Lịch sử</span>
         </button>
 
-        {/* Nav 5: Quản trị (Chỉ hiển thị cho Quản trị viên) */}
+        {/* Nav 5: Doanh thu */}
+        <button
+          onClick={() => setActiveTab('revenue')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors min-w-0 ${
+            activeTab === 'revenue' ? 'text-emerald-700 font-black' : 'text-gray-500 font-medium'
+          }`}
+        >
+          <DollarSign size={19} className={activeTab === 'revenue' ? 'text-emerald-700' : 'text-gray-400'} />
+          <span className="text-[10px] mt-0.5 truncate max-w-full text-center font-bold">Doanh thu</span>
+        </button>
+
+        {/* Nav 6: Quản trị (Chỉ hiển thị cho Quản trị viên) */}
         {user.role === 'admin' && (
           <button
             onClick={() => setActiveTab('admin')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors min-w-0 ${
               activeTab === 'admin' ? 'text-gray-900 font-black' : 'text-gray-500 font-medium'
             }`}
           >
-            <Settings size={20} className={activeTab === 'admin' ? 'text-gray-900' : 'text-gray-400'} />
-            <span className="text-[10px] mt-1">Quản trị</span>
+            <Settings size={19} className={activeTab === 'admin' ? 'text-gray-900' : 'text-gray-400'} />
+            <span className="text-[10px] mt-0.5 truncate max-w-full text-center">Quản trị</span>
           </button>
         )}
       </nav>
