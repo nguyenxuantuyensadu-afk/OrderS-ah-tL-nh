@@ -17,7 +17,9 @@ import {
   Check, 
   FileText, 
   ArrowUpDown,
-  Filter
+  Filter,
+  Ban,
+  AlertTriangle
 } from 'lucide-react';
 
 interface OrderHistoryTabProps {
@@ -27,15 +29,16 @@ interface OrderHistoryTabProps {
 
 export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'cancelled'>('all');
   const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'all' | 'custom'>('today');
   const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'cash' | 'transfer'>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [copiedInfo, setCopiedInfo] = useState(false);
 
-  // Filter completed orders primarily (and allow viewing any archived orders)
-  const completedOrders = useMemo(() => {
-    return orders.filter(o => o.status === 'completed');
+  // History includes completed and cancelled orders
+  const historyOrders = useMemo(() => {
+    return orders.filter(o => o.status === 'completed' || o.status === 'cancelled');
   }, [orders]);
 
   // Today and yesterday timestamps
@@ -46,8 +49,14 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
 
   // Filtered orders list
   const filteredOrders = useMemo(() => {
-    return completedOrders.filter(order => {
-      const orderDate = new Date(order.completedAt || order.timestamp);
+    return historyOrders.filter(order => {
+      // Status filter
+      if (statusFilter !== 'all' && order.status !== statusFilter) {
+        return false;
+      }
+
+      const orderTime = order.completedAt || order.cancelledAt || order.timestamp;
+      const orderDate = new Date(orderTime);
       const orderDateStr = orderDate.toLocaleDateString('vi-VN');
       const orderIsoDateStr = orderDate.toISOString().split('T')[0];
 
@@ -62,12 +71,14 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
         return false;
       }
 
-      // Payment method filtering
-      if (paymentFilter !== 'all' && order.paymentMethod !== paymentFilter) {
-        return false;
+      // Payment method filtering (only applies to completed orders)
+      if (paymentFilter !== 'all') {
+        if (order.status !== 'completed' || order.paymentMethod !== paymentFilter) {
+          return false;
+        }
       }
 
-      // Text search filtering (Order ID, table, customer name, items)
+      // Text search filtering (Order ID, table, customer name, items, cancel reason)
       if (searchTerm.trim()) {
         const query = searchTerm.toLowerCase().trim();
         const matchesId = order.id.toLowerCase().includes(query);
@@ -75,24 +86,32 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
         const matchesCustomer = order.customerName?.toLowerCase().includes(query);
         const matchesTable = order.table?.toLowerCase().includes(query);
         const matchesItems = order.items.some(i => i.name.toLowerCase().includes(query));
+        const matchesReason = order.cancelReason?.toLowerCase().includes(query);
 
-        if (!matchesId && !matchesOrderNum && !matchesCustomer && !matchesTable && !matchesItems) {
+        if (!matchesId && !matchesOrderNum && !matchesCustomer && !matchesTable && !matchesItems && !matchesReason) {
           return false;
         }
       }
 
       return true;
     }).sort((a, b) => {
-      // Sort newest completed orders first
-      const timeA = a.completedAt || a.timestamp;
-      const timeB = b.completedAt || b.timestamp;
+      // Sort newest completed/cancelled orders first
+      const timeA = a.completedAt || a.cancelledAt || a.timestamp;
+      const timeB = b.completedAt || b.cancelledAt || b.timestamp;
       return timeB - timeA;
     });
-  }, [completedOrders, dateFilter, customDate, paymentFilter, searchTerm, todayStr, yesterdayStr]);
+  }, [historyOrders, statusFilter, dateFilter, customDate, paymentFilter, searchTerm, todayStr, yesterdayStr]);
 
   // Today stats for quick overview
-  const todayOrdersCount = completedOrders.filter(o => {
+  const todayCompletedCount = historyOrders.filter(o => {
+    if (o.status !== 'completed') return false;
     const d = new Date(o.completedAt || o.timestamp).toLocaleDateString('vi-VN');
+    return d === todayStr;
+  }).length;
+
+  const todayCancelledCount = historyOrders.filter(o => {
+    if (o.status !== 'cancelled') return false;
+    const d = new Date(o.cancelledAt || o.timestamp).toLocaleDateString('vi-VN');
     return d === todayStr;
   }).length;
 
@@ -142,13 +161,19 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs flex-wrap">
             <div className="bg-amber-50 border border-amber-200/80 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-amber-900 font-semibold">
               <Clock size={14} className="text-amber-600" />
-              <span>Hôm nay: <strong>{todayOrdersCount}</strong> đơn hoàn tất</span>
+              <span>Hôm nay: <strong>{todayCompletedCount}</strong> hoàn tất</span>
             </div>
+            {todayCancelledCount > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-red-700 font-semibold">
+                <Ban size={14} className="text-red-500" />
+                <span><strong>{todayCancelledCount}</strong> đã huỷ</span>
+              </div>
+            )}
             <div className="bg-gray-100 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-gray-700 font-medium">
-              <span>Tổng lưu trữ: <strong>{completedOrders.length}</strong></span>
+              <span>Tổng lưu trữ: <strong>{historyOrders.length}</strong></span>
             </div>
           </div>
         </div>
@@ -160,7 +185,7 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
             <input
               type="text"
-              placeholder="Tìm theo mã đơn (#1234), tên khách, hoặc tên món..."
+              placeholder="Tìm theo mã đơn (#1234), tên khách, lý do huỷ, tên món..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all min-h-[42px]"
@@ -174,6 +199,39 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
                 <X size={15} />
               </button>
             )}
+          </div>
+
+          {/* Status Filter Pills */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs shrink-0 self-start md:self-auto">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`px-2.5 py-1.5 rounded-lg font-semibold transition-all ${
+                statusFilter === 'all' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              Tất cả trạng thái
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('completed')}
+              className={`px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 transition-all ${
+                statusFilter === 'completed' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <CheckCircle2 size={13} />
+              <span>Hoàn tất</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('cancelled')}
+              className={`px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 transition-all ${
+                statusFilter === 'cancelled' ? 'bg-white text-red-600 shadow-xs' : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <Ban size={13} />
+              <span>Đã huỷ</span>
+            </button>
           </div>
 
           {/* Date Filter Buttons */}
@@ -286,18 +344,27 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {filteredOrders.map(order => {
                 const totalItemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
-                const orderTime = new Date(order.completedAt || order.timestamp);
+                const isCancelled = order.status === 'cancelled';
+                const orderTime = new Date(order.completedAt || order.cancelledAt || order.timestamp);
 
                 return (
                   <div
                     key={order.id}
                     onClick={() => setSelectedOrder(order)}
-                    className="bg-white hover:bg-amber-50/20 border border-gray-200 hover:border-amber-300 rounded-2xl p-4 shadow-2xs transition-all cursor-pointer space-y-3 group"
+                    className={`bg-white rounded-2xl p-4 shadow-2xs transition-all cursor-pointer space-y-3 group border ${
+                      isCancelled 
+                        ? 'border-red-200 hover:border-red-400 bg-red-50/10 hover:bg-red-50/30' 
+                        : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/20'
+                    }`}
                   >
                     {/* Card Header: Order Code, Status, Time */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-black text-gray-900 bg-gray-100 group-hover:bg-amber-100 group-hover:text-amber-900 px-2.5 py-1 rounded-xl transition-colors">
+                        <span className={`font-mono text-sm font-black px-2.5 py-1 rounded-xl transition-colors ${
+                          isCancelled 
+                            ? 'text-red-700 bg-red-100 group-hover:bg-red-200' 
+                            : 'text-gray-900 bg-gray-100 group-hover:bg-amber-100 group-hover:text-amber-900'
+                        }`}>
                           #{order.id.slice(-4).toUpperCase()}
                         </span>
                         {order.orderNumber && (
@@ -308,10 +375,17 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                          <CheckCircle2 size={12} />
-                          <span>Đã hoàn tất</span>
-                        </span>
+                        {isCancelled ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-red-100 text-red-700 border border-red-200">
+                            <Ban size={12} />
+                            <span>Đã huỷ đơn</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                            <CheckCircle2 size={12} />
+                            <span>Đã hoàn tất</span>
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -328,12 +402,20 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
                       </div>
                     </div>
 
+                    {/* Cancel reason pill if cancelled */}
+                    {isCancelled && order.cancelReason && (
+                      <div className="text-xs bg-red-50 text-red-700 p-2 rounded-xl border border-red-200/80 font-medium">
+                        Lý do huỷ: <strong className="font-bold">{order.cancelReason}</strong>
+                        {order.cancelledByName && <span className="text-red-500 text-[11px] block mt-0.5">Người huỷ: {order.cancelledByName}</span>}
+                      </div>
+                    )}
+
                     {/* Items Preview */}
                     <div className="space-y-1 text-xs">
                       {order.items.slice(0, 3).map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center text-gray-700">
                           <span className="truncate pr-2 flex items-center gap-1">
-                            <strong className="text-amber-800 mr-1 shrink-0">{item.quantity}x</strong>
+                            <strong className={`mr-1 shrink-0 ${isCancelled ? 'text-red-700' : 'text-amber-800'}`}>{item.quantity}x</strong>
                             <span className="truncate">{item.name}</span>
                             {item.options?.size && (
                               <span className={`px-1 py-0.2 rounded font-black text-[9px] uppercase shrink-0 ${
@@ -358,7 +440,12 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
                     {/* Bottom: Total & Payment Method & View Action */}
                     <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        {order.paymentMethod === 'transfer' ? (
+                        {isCancelled ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 bg-red-50 text-red-700 rounded-lg border border-red-200/60">
+                            <Ban size={12} />
+                            <span>Không thu tiền</span>
+                          </span>
+                        ) : order.paymentMethod === 'transfer' ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-200/60">
                             <CreditCard size={12} />
                             <span>Chuyển khoản</span>
@@ -375,7 +462,7 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
                       </div>
 
                       <div className="flex items-center gap-1">
-                        <span className="text-sm font-black text-amber-600">
+                        <span className={`text-sm font-black ${isCancelled ? 'text-gray-400 line-through' : 'text-amber-600'}`}>
                           {formatCurrency(order.total)}
                         </span>
                         <ChevronRight size={16} className="text-gray-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
@@ -394,19 +481,29 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-in fade-in duration-150">
           <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] flex flex-col shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-amber-50/50">
+            <div className={`p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between ${
+              selectedOrder.status === 'cancelled' ? 'bg-red-50/70' : 'bg-amber-50/50'
+            }`}>
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
-                  <Receipt size={20} />
+                <div className={`w-10 h-10 rounded-2xl text-white flex items-center justify-center shadow-xs ${
+                  selectedOrder.status === 'cancelled' ? 'bg-red-600' : 'bg-amber-500'
+                }`}>
+                  {selectedOrder.status === 'cancelled' ? <Ban size={20} /> : <Receipt size={20} />}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-black text-gray-900 text-base">
                       Đơn #{selectedOrder.id.slice(-4).toUpperCase()}
                     </h3>
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full">
-                      ĐÃ HOÀN TẤT
-                    </span>
+                    {selectedOrder.status === 'cancelled' ? (
+                      <span className="bg-red-100 text-red-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-red-200">
+                        ĐÃ HUỶ
+                      </span>
+                    ) : (
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full">
+                        ĐÃ HOÀN TẤT
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 font-mono">
                     ID: {selectedOrder.id}
@@ -432,25 +529,45 @@ export default function OrderHistoryTab({ orders }: OrderHistoryTabProps) {
                   <span className="font-bold text-gray-900">{selectedOrder.customerName || selectedOrder.table || 'Mang về'}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Thời gian hoàn tất:</span>
+                  <span className="text-gray-500">
+                    {selectedOrder.status === 'cancelled' ? 'Thời gian huỷ:' : 'Thời gian hoàn tất:'}
+                  </span>
                   <span className="font-medium text-gray-800 font-mono text-xs">
-                    {new Date(selectedOrder.completedAt || selectedOrder.timestamp).toLocaleTimeString('vi-VN')} - {new Date(selectedOrder.completedAt || selectedOrder.timestamp).toLocaleDateString('vi-VN')}
+                    {new Date(selectedOrder.completedAt || selectedOrder.cancelledAt || selectedOrder.timestamp).toLocaleTimeString('vi-VN')} - {new Date(selectedOrder.completedAt || selectedOrder.cancelledAt || selectedOrder.timestamp).toLocaleDateString('vi-VN')}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Phương thức thanh toán:</span>
-                  {selectedOrder.paymentMethod === 'transfer' ? (
-                    <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60 text-xs">
-                      <CreditCard size={12} />
-                      <span>Chuyển khoản QR</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-md border border-green-200/60 text-xs">
-                      <Banknote size={12} />
-                      <span>Tiền mặt</span>
-                    </span>
-                  )}
-                </div>
+
+                {selectedOrder.status === 'cancelled' ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500">Người thực hiện huỷ:</span>
+                      <span className="font-bold text-red-700">{selectedOrder.cancelledByName || 'Nhân viên'}</span>
+                    </div>
+                    {selectedOrder.cancelReason && (
+                      <div className="pt-1.5 border-t border-gray-200/60 text-xs">
+                        <span className="text-red-600 block mb-0.5 font-bold">Lý do huỷ đơn:</span>
+                        <p className="text-red-800 font-medium bg-red-50 p-2 rounded-lg border border-red-200/60">
+                          {selectedOrder.cancelReason}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Phương thức thanh toán:</span>
+                    {selectedOrder.paymentMethod === 'transfer' ? (
+                      <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60 text-xs">
+                        <CreditCard size={12} />
+                        <span>Chuyển khoản QR</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-md border border-green-200/60 text-xs">
+                        <Banknote size={12} />
+                        <span>Tiền mặt</span>
+                      </span>
+                    )}
+                  </div>
+                )}
                 {selectedOrder.note && (
                   <div className="pt-1.5 border-t border-gray-200/60 text-xs">
                     <span className="text-gray-500 block mb-0.5 font-medium">Ghi chú đơn:</span>

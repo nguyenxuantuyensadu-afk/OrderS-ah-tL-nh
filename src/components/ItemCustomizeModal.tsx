@@ -107,7 +107,7 @@ export default function ItemCustomizeModal({
         className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[92vh] sm:max-h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-200"
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-amber-500 to-orange-500 text-white shrink-0">
+        <div className="p-4 sm:p-5 border-b border-[#3b2415]/20 flex items-center justify-between bg-gradient-to-r from-[#4f331e] via-[#644127] to-[#7c5434] text-white shrink-0">
           <div className="min-w-0 pr-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-md bg-white/20 text-[11px] font-bold">
@@ -127,17 +127,17 @@ export default function ItemCustomizeModal({
         </div>
 
         {/* Form Body */}
-        <form id="customize-form" onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5">
+        <form id="customize-form" onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 bg-[#faf8f5]/40">
           
           {/* 0. Chọn Size (Size M & Size L cho Matcha & Cà phê) */}
           {hasSizes && (
-            <div className="bg-amber-50/60 p-3 sm:p-3.5 rounded-2xl border border-amber-200/80">
+            <div className="bg-[#faf6f1] p-3 sm:p-3.5 rounded-2xl border border-[#e6d5c2]">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-600"></span>
+                <label className="text-xs font-black uppercase tracking-wider text-[#25150c] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#54331e]"></span>
                   <span>Chọn Size (Kích cỡ)</span>
                 </label>
-                <span className="text-[11px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-bold text-[#54331e] bg-[#f4efe9] px-2 py-0.5 rounded-full border border-[#d5c8b8]">
                   Bắt buộc
                 </span>
               </div>
@@ -149,24 +149,24 @@ export default function ItemCustomizeModal({
                   onClick={() => setSize('M')}
                   className={`p-3 rounded-xl border-2 text-left transition-all touch-manipulation relative flex flex-col justify-between ${
                     size === 'M'
-                      ? 'border-amber-500 bg-white text-amber-950 shadow-xs ring-2 ring-amber-400/20'
-                      : 'border-gray-200 bg-white/70 text-gray-700 hover:border-gray-300'
+                      ? 'border-[#54331e] bg-white text-[#25150c] shadow-xs ring-2 ring-[#e6d5c2]'
+                      : 'border-[#e6d5c2] bg-white/70 text-[#5f5043] hover:border-[#b8a693]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${
-                        size === 'M' ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700'
+                        size === 'M' ? 'bg-[#54331e] text-white' : 'bg-[#f4efe9] text-[#5f5043]'
                       }`}>
                         M
                       </span>
                       <span className="font-extrabold text-xs sm:text-sm">Size M (Vừa)</span>
                     </div>
-                    {size === 'M' && <Check size={16} className="text-amber-600 shrink-0" />}
+                    {size === 'M' && <Check size={16} className="text-[#54331e] shrink-0" />}
                   </div>
-                  <div className="mt-2 flex items-baseline justify-between pt-1.5 border-t border-gray-100">
-                    <span className="text-[11px] text-gray-400 font-medium">Tiêu chuẩn</span>
-                    <span className="text-xs font-black text-amber-700">{formatCurrency(priceM)}</span>
+                  <div className="mt-2 flex items-baseline justify-between pt-1.5 border-t border-[#f4efe9]">
+                    <span className="text-[11px] text-[#978370] font-medium">Tiêu chuẩn</span>
+                    <span className="text-xs font-black text-[#54331e]">{formatCurrency(priceM)}</span>
                   </div>
                 </button>
 
@@ -176,26 +176,26 @@ export default function ItemCustomizeModal({
                   onClick={() => setSize('L')}
                   className={`p-3 rounded-xl border-2 text-left transition-all touch-manipulation relative flex flex-col justify-between ${
                     size === 'L'
-                      ? 'border-purple-500 bg-white text-purple-950 shadow-xs ring-2 ring-purple-400/20'
-                      : 'border-gray-200 bg-white/70 text-gray-700 hover:border-gray-300'
+                      ? 'border-[#7c5434] bg-white text-[#25150c] shadow-xs ring-2 ring-[#e6d5c2]'
+                      : 'border-[#e6d5c2] bg-white/70 text-[#5f5043] hover:border-[#b8a693]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${
-                        size === 'L' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
+                        size === 'L' ? 'bg-[#7c5434] text-white' : 'bg-[#f4efe9] text-[#5f5043]'
                       }`}>
                         L
                       </span>
                       <span className="font-extrabold text-xs sm:text-sm">Size L (Lớn)</span>
                     </div>
-                    {size === 'L' && <Check size={16} className="text-purple-600 shrink-0" />}
+                    {size === 'L' && <Check size={16} className="text-[#7c5434] shrink-0" />}
                   </div>
-                  <div className="mt-2 flex items-baseline justify-between pt-1.5 border-t border-gray-100">
-                    <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.2 rounded">
+                  <div className="mt-2 flex items-baseline justify-between pt-1.5 border-t border-[#f4efe9]">
+                    <span className="text-[10px] text-[#7c5434] font-bold bg-[#faf6f1] px-1.5 py-0.2 rounded border border-[#e6d5c2]">
                       +{formatCurrency(priceL - priceM)}
                     </span>
-                    <span className="text-xs font-black text-purple-700">{formatCurrency(priceL)}</span>
+                    <span className="text-xs font-black text-[#7c5434]">{formatCurrency(priceL)}</span>
                   </div>
                 </button>
               </div>
@@ -206,11 +206,11 @@ export default function ItemCustomizeModal({
           {milkTemps.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-black uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
+                <label className="text-xs font-black uppercase tracking-wider text-[#25150c] flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                   <span>1. Sữa / Nhiệt độ phục vụ</span>
                 </label>
-                <span className="text-[11px] text-gray-400 font-semibold">Bắt buộc</span>
+                <span className="text-[11px] text-[#978370] font-semibold">Bắt buộc</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -227,13 +227,13 @@ export default function ItemCustomizeModal({
                       onClick={() => setMilkTemp(choice.label)}
                       className={`p-2.5 rounded-xl border-2 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all touch-manipulation ${
                         isSelected
-                          ? 'border-amber-500 bg-amber-50/80 text-amber-900 shadow-2xs'
-                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          ? 'border-[#54331e] bg-[#faf6f1] text-[#25150c] shadow-2xs'
+                          : 'border-[#e6d5c2] bg-white text-[#5f5043] hover:border-[#b8a693]'
                       }`}
                     >
                       {isCold && <Snowflake size={16} className={isSelected ? 'text-blue-600' : 'text-blue-400'} />}
                       {(isHot || isWarm) && <Flame size={16} className={isSelected ? 'text-orange-600' : 'text-orange-400'} />}
-                      {!isCold && !isHot && !isWarm && <span className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[9px] text-gray-600 font-bold">•</span>}
+                      {!isCold && !isHot && !isWarm && <span className="w-4 h-4 rounded-full bg-[#f4efe9] flex items-center justify-center text-[9px] text-[#5f5043] font-bold">•</span>}
                       <span className="truncate">{choice.label}</span>
                     </button>
                   );
@@ -246,11 +246,11 @@ export default function ItemCustomizeModal({
           {sweeteners.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-black uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                <label className="text-xs font-black uppercase tracking-wider text-[#25150c] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#7c5434]"></span>
                   <span>2. Chất làm ngọt</span>
                 </label>
-                <span className="text-[11px] text-gray-400 font-semibold">Tùy chọn</span>
+                <span className="text-[11px] text-[#978370] font-semibold">Tùy chọn</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -263,15 +263,15 @@ export default function ItemCustomizeModal({
                       onClick={() => setSweetener(choice.label)}
                       className={`p-2.5 rounded-xl border-2 text-left transition-all touch-manipulation ${
                         isSelected
-                          ? 'border-amber-500 bg-amber-50/80 text-amber-900 shadow-2xs'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                          ? 'border-[#54331e] bg-[#faf6f1] text-[#25150c] shadow-2xs'
+                          : 'border-[#e6d5c2] bg-white text-[#5f5043] hover:border-[#b8a693]'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-bold truncate">{choice.label}</p>
-                        {isSelected && <Check size={14} className="text-amber-600 shrink-0" />}
+                        {isSelected && <Check size={14} className="text-[#54331e] shrink-0" />}
                       </div>
-                      {choice.desc && <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{choice.desc}</p>}
+                      {choice.desc && <p className="text-[10px] text-[#978370] mt-0.5 leading-tight">{choice.desc}</p>}
                     </button>
                   );
                 })}
@@ -283,11 +283,11 @@ export default function ItemCustomizeModal({
           {sweetnessLevels.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-black uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                <label className="text-xs font-black uppercase tracking-wider text-[#25150c] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-green-600"></span>
                   <span>3. Mức độ ngọt</span>
                 </label>
-                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
+                <span className="text-xs font-bold text-[#54331e] bg-[#faf6f1] border border-[#e6d5c2] px-2 py-0.5 rounded-md">
                   {sweetness}
                 </span>
               </div>
@@ -302,15 +302,15 @@ export default function ItemCustomizeModal({
                       onClick={() => setSweetness(choice.label)}
                       className={`p-2 rounded-xl border-2 text-left transition-all touch-manipulation ${
                         isSelected
-                          ? 'border-amber-500 bg-amber-50/80 text-amber-900 shadow-2xs'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                          ? 'border-[#54331e] bg-[#faf6f1] text-[#25150c] shadow-2xs'
+                          : 'border-[#e6d5c2] bg-white text-[#5f5043] hover:border-[#b8a693]'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold">{choice.label}</span>
-                        {isSelected && <Check size={14} className="text-amber-600 shrink-0" />}
+                        {isSelected && <Check size={14} className="text-[#54331e] shrink-0" />}
                       </div>
-                      {choice.desc && <p className="text-[10px] text-gray-400 leading-tight mt-0.5">{choice.desc}</p>}
+                      {choice.desc && <p className="text-[10px] text-[#978370] leading-tight mt-0.5">{choice.desc}</p>}
                     </button>
                   );
                 })}
@@ -321,10 +321,10 @@ export default function ItemCustomizeModal({
           {/* 4. Ghi chú riêng cho món */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-black uppercase tracking-wider text-gray-700">
+              <label className="text-xs font-black uppercase tracking-wider text-[#25150c]">
                 Ghi chú thêm cho món
               </label>
-              <span className="text-[10px] text-gray-400 font-medium">Bấm chọn nhanh hoặc nhập tay</span>
+              <span className="text-[10px] text-[#978370] font-medium">Bấm chọn nhanh hoặc nhập tay</span>
             </div>
             
             {/* Quick chips */}
@@ -345,8 +345,8 @@ export default function ItemCustomizeModal({
                       }}
                       className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all ${
                         isActive
-                          ? 'bg-amber-500 text-white shadow-2xs'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-[#54331e] text-white shadow-2xs'
+                          : 'bg-[#faf6f1] text-[#5f5043] border border-[#e6d5c2] hover:bg-[#f3eae0]'
                       }`}
                     >
                       + {chip}
@@ -361,29 +361,29 @@ export default function ItemCustomizeModal({
               value={itemNote}
               onChange={(e) => setItemNote(e.target.value)}
               placeholder="VD: Không lấy đá, cho vào ly giấy, ít cà phê..."
-              className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none"
+              className="w-full px-3.5 py-2 bg-white border border-[#d5c8b8] rounded-xl text-xs sm:text-sm text-[#25150c] placeholder-[#978370] focus:ring-2 focus:ring-[#7c5434] outline-none"
             />
           </div>
 
           {/* Quantity Selector */}
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-200">
+          <div className="flex items-center justify-between p-3 bg-[#faf6f1] rounded-2xl border border-[#e6d5c2]">
             <div>
-              <p className="text-xs font-bold text-gray-700">Số lượng ly / phần</p>
-              <p className="text-[11px] text-gray-400">Đơn giá: {formatCurrency(item.price)}</p>
+              <p className="text-xs font-bold text-[#25150c]">Số lượng ly / phần</p>
+              <p className="text-[11px] text-[#978370]">Đơn giá: {formatCurrency(item.price)}</p>
             </div>
-            <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-xl border border-gray-200">
+            <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-xl border border-[#e6d5c2]">
               <button
                 type="button"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold flex items-center justify-center text-sm"
+                className="w-7 h-7 rounded-lg bg-[#faf8f5] hover:bg-[#f3eae0] text-[#5f5043] font-bold flex items-center justify-center text-sm"
               >
                 -
               </button>
-              <span className="w-8 text-center font-black text-sm text-gray-800">{quantity}</span>
+              <span className="w-8 text-center font-black text-sm text-[#25150c]">{quantity}</span>
               <button
                 type="button"
                 onClick={() => setQuantity(quantity + 1)}
-                className="w-7 h-7 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center justify-center text-sm"
+                className="w-7 h-7 rounded-lg bg-[#54331e] hover:bg-[#3b2415] text-white font-bold flex items-center justify-center text-sm"
               >
                 +
               </button>
@@ -393,12 +393,12 @@ export default function ItemCustomizeModal({
         </form>
 
         {/* Footer */}
-        <div className="p-3.5 sm:p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-3.5 sm:p-4 border-t border-[#e6d5c2] bg-white flex items-center justify-between gap-3 shrink-0">
           <div className="leading-tight">
-            <span className="text-[11px] text-gray-500 font-medium">
+            <span className="text-[11px] text-[#978370] font-medium">
               {hasSizes ? `Đơn giá (${size === 'L' ? 'Size L' : 'Size M'}): ${formatCurrency(currentUnitPrice)}` : 'Tổng tiền món:'}
             </span>
-            <p className="text-lg sm:text-xl font-black text-amber-600">
+            <p className="text-lg sm:text-xl font-black text-[#25150c]">
               {formatCurrency(currentUnitPrice * quantity)}
             </p>
           </div>
@@ -407,7 +407,7 @@ export default function ItemCustomizeModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2.5 rounded-xl border border-gray-200 font-bold text-xs sm:text-sm text-gray-600 bg-white hover:bg-gray-100 transition-colors"
+              className="px-3.5 py-2.5 rounded-xl border border-[#e6d5c2] font-bold text-xs sm:text-sm text-[#5f5043] bg-white hover:bg-[#faf6f1] transition-colors"
             >
               Hủy
             </button>
@@ -433,14 +433,14 @@ export default function ItemCustomizeModal({
                 onClose();
               }}
               title="Thêm với công thức chuẩn"
-              className="hidden sm:inline-flex px-3.5 py-2.5 rounded-xl border border-amber-300 font-bold text-xs sm:text-sm text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors"
+              className="hidden sm:inline-flex px-3.5 py-2.5 rounded-xl border border-[#d5c8b8] font-bold text-xs sm:text-sm text-[#54331e] bg-[#faf6f1] hover:bg-[#f3eae0] transition-colors"
             >
               Thêm chuẩn
             </button>
             <button
               type="submit"
               form="customize-form"
-              className="px-4 sm:px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-black text-xs sm:text-sm shadow-md shadow-amber-200 transition-all flex items-center gap-1.5 touch-manipulation"
+              className="px-4 sm:px-5 py-2.5 rounded-xl bg-[#54331e] hover:bg-[#3b2415] active:scale-95 text-white font-black text-xs sm:text-sm shadow-md shadow-[#54331e]/20 transition-all flex items-center gap-1.5 touch-manipulation"
             >
               <Sparkles size={16} />
               <span>Xác nhận thêm món</span>

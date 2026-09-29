@@ -1,1 +1,77 @@
 @import "tailwindcss";
+
+@theme {
+  /* Rich Artisan Coffee Brown Palette */
+  --color-brown-50: #faf6f1;
+  --color-brown-100: #f3eae0;
+  --color-brown-200: #e6d5c2;
+  --color-brown-300: #d4bba0;
+  --color-brown-400: #be9977;
+  --color-brown-500: #966b44;
+  --color-brown-600: #7c5434;
+  --color-brown-700: #644127;
+  --color-brown-800: #4f331e;
+  --color-brown-900: #3b2415;
+  --color-brown-950: #25150c;
+
+  /* Transform Amber tokens into warm roasted coffee / caramel amber */
+  --color-amber-50: #faf6f1;
+  --color-amber-100: #f3eae0;
+  --color-amber-200: #e6d5c2;
+  --color-amber-300: #d4bba0;
+  --color-amber-400: #be9977;
+  --color-amber-500: #966b44;
+  --color-amber-600: #7c5434;
+  --color-amber-700: #644127;
+  --color-amber-800: #4f331e;
+  --color-amber-900: #3b2415;
+  --color-amber-950: #25150c;
+
+  /* Warm Stone neutrals for cozy coffee shop surfaces */
+  --color-stone-50: #faf8f5;
+  --color-stone-100: #f4efe9;
+  --color-stone-200: #e7dfd5;
+  --color-stone-300: #d5c8b8;
+  --color-stone-400: #b8a693;
+  --color-stone-500: #978370;
+  --color-stone-600: #786655;
+  --color-stone-700: #5f5043;
+  --color-stone-800: #4a3e34;
+  --color-stone-900: #342a22;
+  --color-stone-950: #201914;
+}
+
+:root {
+  color-scheme: light;
+  --coffee-espresso: #25150c;
+  --coffee-dark: #3b2415;
+  --coffee-primary: #7c5434;
+  --coffee-caramel: #966b44;
+  --coffee-cream: #faf6f1;
+}
+
+body {
+  background-color: #f7f4ee;
+  color: #342a22;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom warm scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f4efe9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d5c8b8;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b8a693;
+}

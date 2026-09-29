@@ -1,16 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Order } from '../types';
-import { ChefHat, Clock, CheckCircle2, AlertCircle, Sparkles, User, Snowflake, Flame } from 'lucide-react';
+import { Order, CartItem } from '../types';
+import { ChefHat, Clock, CheckCircle2, AlertCircle, Sparkles, User, Snowflake, Flame, Ban, X, AlertTriangle } from 'lucide-react';
+import CancelModal from './CancelModal';
 
 interface KitchenTabProps {
   orders: Order[];
   onMarkReady: (orderId: string) => Promise<void>;
+  onCancelItem?: (orderId: string, item: CartItem, cancelQty: number, reason: string) => Promise<void>;
+  onCancelOrder?: (orderId: string, reason: string) => Promise<void>;
 }
 
-export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
+export default function KitchenTab({ orders, onMarkReady, onCancelItem, onCancelOrder }: KitchenTabProps) {
   const [filter, setFilter] = useState<'cooking' | 'ready' | 'all'>('cooking');
   const [now, setNow] = useState(Date.now());
   const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  // Cancellation modal state
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+  const [cancellingItem, setCancellingItem] = useState<CartItem | null>(null);
 
   // Update elapsed time every 10 seconds
   useEffect(() => {
@@ -58,12 +66,24 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
     }
   };
 
+  const handleOpenCancelItem = (order: Order, item: CartItem) => {
+    setCancellingOrder(order);
+    setCancellingItem(item);
+    setCancelModalOpen(true);
+  };
+
+  const handleOpenCancelOrder = (order: Order) => {
+    setCancellingOrder(order);
+    setCancellingItem(null);
+    setCancelModalOpen(true);
+  };
+
   return (
     <div className="p-3 sm:p-5 lg:p-6 bg-gray-50/60 h-full overflow-y-auto flex flex-col">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-200 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-[#644127] text-white flex items-center justify-center shadow-md shadow-[#644127]/20 shrink-0">
             <ChefHat size={22} />
           </div>
           <div>
@@ -78,12 +98,12 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
             onClick={() => setFilter('cooking')}
             className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
               filter === 'cooking'
-                ? 'bg-orange-500 text-white shadow-xs'
+                ? 'bg-[#644127] text-white shadow-xs'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
             <span>Chờ làm</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[11px] ${filter === 'cooking' ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-700'}`}>
+            <span className={`px-1.5 py-0.2 rounded-full text-[11px] ${filter === 'cooking' ? 'bg-[#4f331e] text-white' : 'bg-[#f3eae0] text-[#644127]'}`}>
               {kitchenOrders.length}
             </span>
           </button>
@@ -118,7 +138,7 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
       {/* Orders Grid - 1 col on mobile, 2 cols on tablet, 3-4 on desktop */}
       {displayedOrders.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-8 bg-white rounded-3xl border border-gray-200 shadow-sm my-auto">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center mb-3">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f3eae0] text-[#644127] flex items-center justify-center mb-3">
             <Sparkles size={32} />
           </div>
           <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
@@ -147,10 +167,10 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
               >
                 {/* Header Card */}
                 <div className={`p-3 sm:p-4 border-b flex items-center justify-between ${
-                  isCooking ? 'bg-orange-50/60 border-orange-100' : 'bg-green-50 border-green-100'
+                  isCooking ? 'bg-[#faf6f1] border-[#f3eae0]' : 'bg-green-50 border-green-100'
                 }`}>
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-gray-900 text-white font-mono shrink-0">
+                    <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-[#25150c] text-white font-mono shrink-0">
                       #{order.id.slice(-4).toUpperCase()}
                     </span>
                     <div className="flex items-center gap-1.5 min-w-0">
@@ -161,16 +181,38 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-1 text-xs font-bold text-gray-600 shrink-0 ml-2">
-                    <Clock size={13} className={isCooking ? 'text-orange-600' : 'text-green-600'} />
-                    <span>{elapsedText}</span>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <div className="flex items-center gap-1 text-xs font-bold text-gray-600">
+                      <Clock size={13} className={isCooking ? 'text-[#7c5434]' : 'text-green-600'} />
+                      <span>{elapsedText}</span>
+                    </div>
+
+                    {isCooking && onCancelOrder && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCancelOrder(order)}
+                        className="px-2 py-1 text-xs font-bold text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-all border border-red-200 hover:border-red-600 flex items-center gap-1 shadow-2xs"
+                        title="Huỷ toàn bộ đơn hàng này"
+                      >
+                        <Ban size={13} />
+                        <span className="hidden sm:inline">Huỷ đơn</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Note banner if present */}
-                {order.note && (
-                  <div className="px-3 sm:px-4 py-2 bg-amber-50 border-b border-amber-100 flex items-start gap-2 text-amber-800 text-xs font-medium">
-                    <AlertCircle size={14} className="shrink-0 mt-0.5 text-amber-600" />
+                {/* Cancelled note alert if items were cancelled */}
+                {order.note && order.note.includes('Đã huỷ') && (
+                  <div className="px-3 sm:px-4 py-2 bg-red-50 border-b border-red-200 flex items-start gap-2 text-red-800 text-xs font-bold animate-fadeIn">
+                    <AlertTriangle size={15} className="shrink-0 mt-0.5 text-red-600" />
+                    <span className="leading-snug">⚠️ {order.note}</span>
+                  </div>
+                )}
+
+                {/* Note banner if present and not pure cancel note */}
+                {order.note && !order.note.includes('Đã huỷ') && (
+                  <div className="px-3 sm:px-4 py-2 bg-[#faf6f1] border-b border-[#f3eae0] flex items-start gap-2 text-[#644127] text-xs font-medium">
+                    <AlertCircle size={14} className="shrink-0 mt-0.5 text-[#7c5434]" />
                     <span className="line-clamp-2">Ghi chú: <strong className="font-bold">{order.note}</strong></span>
                   </div>
                 )}
@@ -193,7 +235,7 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-orange-500 text-white font-black text-xs sm:text-sm flex items-center justify-center shrink-0 shadow-2xs">
+                            <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#644127] text-white font-black text-xs sm:text-sm flex items-center justify-center shrink-0 shadow-2xs">
                               {item.quantity}
                             </span>
                             <div className="min-w-0">
@@ -203,7 +245,7 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                                   <span className={`px-2 py-0.5 rounded-md font-black text-xs uppercase shrink-0 shadow-2xs ${
                                     item.options.size === 'L' 
                                       ? 'bg-purple-600 text-white' 
-                                      : 'bg-amber-500 text-white'
+                                      : 'bg-[#7c5434] text-white'
                                   }`}>
                                     Size {item.options.size}
                                   </span>
@@ -212,6 +254,19 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                               <span className="text-[10px] text-gray-400 font-medium">{item.category}</span>
                             </div>
                           </div>
+
+                          {/* Action: Huỷ món */}
+                          {isCooking && onCancelItem && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCancelItem(order, item)}
+                              className="px-2 py-1 rounded-lg text-xs font-bold text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 transition-all flex items-center gap-1 shrink-0 active:scale-95"
+                              title={`Huỷ món ${item.name}`}
+                            >
+                              <X size={13} strokeWidth={2.5} />
+                              <span className="text-[11px]">Huỷ món</span>
+                            </button>
+                          )}
                         </div>
 
                         {/* Pha chế options for Kitchen */}
@@ -219,7 +274,7 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                           <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-200/60 text-[11px]">
                             {item.options?.size && (
                               <span className={`px-2 py-0.5 rounded-md font-black text-xs ${
-                                item.options.size === 'L' ? 'bg-purple-100 text-purple-900 border border-purple-200' : 'bg-amber-100 text-amber-900 border border-amber-200'
+                                item.options.size === 'L' ? 'bg-purple-100 text-purple-900 border border-purple-200' : 'bg-[#f3eae0] text-[#54331e] border border-[#e6d5c2]'
                               }`}>
                                 Size: {item.options.size}
                               </span>
@@ -233,7 +288,7 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                             )}
 
                             {item.options?.sweetener && (
-                              <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-amber-100 text-amber-900">
+                              <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-[#f3eae0] text-[#54331e]">
                                 {item.options.sweetener}
                               </span>
                             )}
@@ -266,7 +321,7 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
                     <button
                       onClick={() => handleRaMon(order.id)}
                       disabled={loadingId === order.id}
-                      className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-95 text-white font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2.5 rounded-xl shadow-md shadow-orange-200 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 touch-manipulation"
+                      className="bg-gradient-to-r from-[#54331e] to-[#7c5434] hover:from-[#442714] hover:to-[#644127] active:scale-95 text-white font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2.5 rounded-xl shadow-md shadow-[#54331e]/20 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 touch-manipulation"
                     >
                       {loadingId === order.id ? (
                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -288,6 +343,30 @@ export default function KitchenTab({ orders, onMarkReady }: KitchenTabProps) {
             );
           })}
         </div>
+      )}
+
+      {/* Cancellation Modal */}
+      {cancelModalOpen && cancellingOrder && (
+        <CancelModal
+          isOpen={cancelModalOpen}
+          order={cancellingOrder}
+          targetItem={cancellingItem}
+          onClose={() => {
+            setCancelModalOpen(false);
+            setCancellingOrder(null);
+            setCancellingItem(null);
+          }}
+          onConfirmCancelItem={async (orderId, item, cancelQty, reason) => {
+            if (onCancelItem) {
+              await onCancelItem(orderId, item, cancelQty, reason);
+            }
+          }}
+          onConfirmCancelOrder={async (orderId, reason) => {
+            if (onCancelOrder) {
+              await onCancelOrder(orderId, reason);
+            }
+          }}
+        />
       )}
     </div>
   );

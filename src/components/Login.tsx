@@ -74,17 +74,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-gray-100 flex items-center justify-center p-4 font-sans">
-      <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-xl border border-gray-100 w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-[#faf6f1] via-[#f3eae0] to-[#e6d5c2] flex items-center justify-center p-4 font-sans">
+      <div className="bg-white/95 backdrop-blur-sm p-6 sm:p-8 rounded-3xl shadow-xl shadow-[#25150c]/8 border border-[#e6d5c2] w-full max-w-md">
         
         {/* Brand Header */}
         <div className="flex flex-col items-center mb-6 text-center">
-          <div className="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-200 mb-3">
+          <div className="w-16 h-16 bg-gradient-to-br from-[#4f331e] via-[#644127] to-[#8c5b36] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#4f331e]/20 mb-3">
             <Store size={32} strokeWidth={2.5} />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">POS Mini</h1>
-          <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">
-            Hệ thống Gọi món, Chế biến & Quản lý thu ngân
+          <h1 className="text-2xl sm:text-3xl font-black text-[#25150c] tracking-tight">POS Mini</h1>
+          <p className="text-xs sm:text-sm text-[#7c5434] font-semibold mt-1">
+            Hệ thống Quản lý Bán hàng & Pha chế Cà phê Chuyên nghiệp
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="mt-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5"
+                  className="mt-2 text-xs font-bold text-white bg-[#7c5434] hover:bg-[#644127] px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5"
                 >
                   <Sparkles size={13} />
                   <span>Bấm vào đây để Đăng nhập Google</span>
@@ -114,7 +114,7 @@ export default function Login() {
             onClick={handleGoogleLogin}
             disabled={googleLoading}
             type="button"
-            className="w-full flex items-center justify-center gap-3 bg-gray-900 hover:bg-black text-white px-5 py-3.5 rounded-2xl font-bold text-sm sm:text-base shadow-md transition-all active:scale-98 disabled:opacity-75 touch-manipulation min-h-[48px]"
+            className="w-full flex items-center justify-center gap-3 bg-[#25150c] hover:bg-[#3b2415] text-white px-5 py-3.5 rounded-2xl font-bold text-sm sm:text-base shadow-md shadow-[#25150c]/15 transition-all active:scale-98 disabled:opacity-75 touch-manipulation min-h-[48px]"
           >
             {googleLoading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -128,30 +128,30 @@ export default function Login() {
             )}
             <span>Đăng nhập bằng Google</span>
           </button>
-          <p className="text-[11px] text-center text-gray-400 font-medium">
+          <p className="text-[11px] text-center text-[#978370] font-medium">
             Đăng nhập 1 chạm an toàn cho Quản trị & Nhân viên
           </p>
         </div>
 
         {/* Secondary: Username/Password toggle */}
         <div className="relative flex items-center py-2 mb-4">
-          <div className="flex-grow border-t border-gray-200"></div>
+          <div className="flex-grow border-t border-[#e6d5c2]"></div>
           <button 
             type="button"
             onClick={() => setShowEmailForm(!showEmailForm)}
-            className="flex-shrink-0 mx-3 text-gray-400 hover:text-gray-600 text-xs font-semibold px-2 py-1 rounded-md hover:bg-gray-50 transition-colors"
+            className="flex-shrink-0 mx-3 text-[#7c5434] hover:text-[#54331e] text-xs font-semibold px-2 py-1 rounded-md hover:bg-[#faf6f1] transition-colors"
           >
             {showEmailForm ? 'Ẩn đăng nhập Tên đăng nhập ▲' : 'Hoặc đăng nhập bằng Tên đăng nhập ▼'}
           </button>
-          <div className="flex-grow border-t border-gray-200"></div>
+          <div className="flex-grow border-t border-[#e6d5c2]"></div>
         </div>
 
         {showEmailForm && (
           <form onSubmit={handleEmailAuth} className="space-y-3.5 animate-in fade-in slide-in-from-top-2">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Tên đăng nhập hoặc Email</label>
+              <label className="block text-xs font-bold text-[#4a3e34] mb-1">Tên đăng nhập hoặc Email</label>
               <div className="relative flex items-center">
-                <span className="absolute left-3 text-gray-400 font-mono font-bold text-sm select-none">@</span>
+                <span className="absolute left-3 text-[#978370] font-mono font-bold text-sm select-none">@</span>
                 <input
                   type="text"
                   required
@@ -160,19 +160,19 @@ export default function Login() {
                   spellCheck="false"
                   value={identifier}
                   onChange={e => setIdentifier(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl pl-8 pr-3.5 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all font-mono min-h-[44px]"
+                  className="w-full border border-[#d5c8b8] bg-[#faf8f5] rounded-xl pl-8 pr-3.5 py-2.5 text-base sm:text-sm focus:bg-white focus:ring-2 focus:ring-[#7c5434] focus:border-[#7c5434] outline-none transition-all font-mono min-h-[44px]"
                   placeholder="Ví dụ: nhanvien1, thungan..."
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Mật khẩu</label>
+              <label className="block text-xs font-bold text-[#4a3e34] mb-1">Mật khẩu</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all min-h-[44px]"
+                className="w-full border border-[#d5c8b8] bg-[#faf8f5] rounded-xl px-3.5 py-2.5 text-base sm:text-sm focus:bg-white focus:ring-2 focus:ring-[#7c5434] focus:border-[#7c5434] outline-none transition-all min-h-[44px]"
                 placeholder="••••••••"
               />
             </div>
@@ -180,7 +180,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-xs active:scale-95 min-h-[44px]"
+              className="w-full flex items-center justify-center gap-2 bg-[#54331e] hover:bg-[#3b2415] disabled:bg-[#978370] text-white px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#54331e]/20 active:scale-95 min-h-[44px]"
             >
               {loading ? 'Đang xử lý...' : (isRegistering ? 'Đăng ký tài khoản' : 'Đăng nhập')}
             </button>
@@ -189,7 +189,7 @@ export default function Login() {
               <button 
                 type="button"
                 onClick={() => setIsRegistering(!isRegistering)}
-                className="text-amber-600 hover:text-amber-700 text-xs font-semibold"
+                className="text-[#7c5434] hover:text-[#54331e] text-xs font-semibold"
               >
                 {isRegistering ? 'Đã có tài khoản? Đăng nhập' : 'Chưa có tài khoản? Đăng ký'}
               </button>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Order, PaymentSettings } from '../types';
+import { Order, CartItem, PaymentSettings } from '../types';
 import { formatCurrency, defaultPaymentSettings } from '../data';
+import CancelModal from './CancelModal';
 import { 
   Bell, 
   Clock, 
@@ -14,22 +15,49 @@ import {
   ShoppingBag,
   User,
   Copy,
-  Check
+  Check,
+  Ban,
+  AlertTriangle
 } from 'lucide-react';
 
 interface ServingTabProps {
   orders: Order[];
   onCompletePayment: (orderId: string, paymentMethod: 'cash' | 'transfer') => Promise<void>;
   paymentSettings?: PaymentSettings;
+  onCancelItem?: (orderId: string, item: CartItem, cancelQty: number, reason: string) => Promise<void>;
+  onCancelOrder?: (orderId: string, reason: string) => Promise<void>;
 }
 
-export default function ServingTab({ orders, onCompletePayment, paymentSettings = defaultPaymentSettings }: ServingTabProps) {
+export default function ServingTab({ 
+  orders, 
+  onCompletePayment, 
+  paymentSettings = defaultPaymentSettings,
+  onCancelItem,
+  onCancelOrder
+}: ServingTabProps) {
   const [filter, setFilter] = useState<'all' | 'ready' | 'cooking'>('all');
   const [payingOrder, setPayingOrder] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer'>('cash');
   const [amountGiven, setAmountGiven] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedAcc, setCopiedAcc] = useState(false);
+
+  // Cancellation modal state
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+  const [cancellingItem, setCancellingItem] = useState<CartItem | null>(null);
+
+  const handleOpenCancelItem = (order: Order, item: CartItem) => {
+    setCancellingOrder(order);
+    setCancellingItem(item);
+    setCancelModalOpen(true);
+  };
+
+  const handleOpenCancelOrder = (order: Order) => {
+    setCancellingOrder(order);
+    setCancellingItem(null);
+    setCancelModalOpen(true);
+  };
 
   // Active orders are those in kitchen or ready to be served / waiting for payment
   const activeOrders = orders.filter(o => o.status === 'in_kitchen' || o.status === 'ready');
@@ -74,7 +102,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-200 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-[#644127] text-white flex items-center justify-center shadow-md shadow-[#644127]/20 shrink-0">
             <ShoppingBag size={22} />
           </div>
           <div>
@@ -115,12 +143,12 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
             onClick={() => setFilter('cooking')}
             className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
               filter === 'cooking'
-                ? 'bg-orange-500 text-white shadow-xs'
+                ? 'bg-[#7c5434] text-white shadow-xs'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
             <span>Đang làm</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[11px] ${filter === 'cooking' ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-700'}`}>
+            <span className={`px-1.5 py-0.2 rounded-full text-[11px] ${filter === 'cooking' ? 'bg-[#54331e] text-white' : 'bg-[#f3eae0] text-[#7c5434]'}`}>
               {cookingCount}
             </span>
           </button>
@@ -130,7 +158,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
       {/* Orders List */}
       {displayedOrders.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-8 bg-white rounded-3xl border border-gray-200 shadow-sm my-auto">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mb-3">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f3eae0] text-[#644127] flex items-center justify-center mb-3">
             <Sparkles size={32} />
           </div>
           <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
@@ -170,21 +198,43 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                     </div>
                   </div>
 
-                  {isReady ? (
-                    <span className="inline-flex items-center gap-1 bg-green-500 text-white px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold animate-pulse shadow-xs shrink-0 ml-2">
-                      <Bell size={12} />
-                      <span>ĐÃ RA MÓN</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ml-2">
-                      <Clock size={12} />
-                      <span>Đang làm</span>
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    {isReady ? (
+                      <span className="inline-flex items-center gap-1 bg-green-500 text-white px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold animate-pulse shadow-xs">
+                        <Bell size={12} />
+                        <span>ĐÃ RA MÓN</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                        <Clock size={12} />
+                        <span>Đang làm</span>
+                      </span>
+                    )}
+
+                    {onCancelOrder && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCancelOrder(order)}
+                        className="px-2 py-1 text-xs font-bold text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-all border border-red-200 hover:border-red-600 flex items-center gap-1 shadow-2xs"
+                        title="Huỷ đơn này"
+                      >
+                        <Ban size={13} />
+                        <span className="hidden sm:inline">Huỷ đơn</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
+                {/* Cancel note warning banner */}
+                {order.note && order.note.includes('Đã huỷ') && (
+                  <div className="px-3 sm:px-4 py-2 bg-red-50 border-b border-red-200 text-red-800 text-xs font-bold flex items-center gap-1.5 animate-fadeIn">
+                    <AlertTriangle size={14} className="shrink-0 text-red-600" />
+                    <span>⚠️ {order.note}</span>
+                  </div>
+                )}
+
                 {/* Note */}
-                {order.note && (
+                {order.note && !order.note.includes('Đã huỷ') && (
                   <div className="px-3 sm:px-4 py-2 bg-amber-50 border-b border-amber-100 text-amber-800 text-xs font-medium flex items-center gap-1.5">
                     <AlertCircle size={14} className="shrink-0 text-amber-600" />
                     <span className="line-clamp-2">Ghi chú: <strong>{order.note}</strong></span>
@@ -200,21 +250,33 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
 
                       return (
                         <div key={item.cartItemId || idx} className="py-1.5 border-b border-gray-100 last:border-none">
-                          <div className="flex items-center justify-between text-xs sm:text-sm">
+                          <div className="flex items-center justify-between text-xs sm:text-sm gap-2">
                             <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                              <span className="font-black text-amber-600 w-5 shrink-0">{item.quantity}x</span>
+                              <span className="font-black text-[#644127] w-5 shrink-0">{item.quantity}x</span>
                               <span className="font-bold text-gray-800 truncate">{item.name}</span>
                               {item.options?.size && (
                                 <span className={`px-1.5 py-0.2 rounded font-black text-[10px] uppercase shrink-0 ${
-                                  item.options.size === 'L' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  item.options.size === 'L' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-[#f3eae0] text-[#54331e] border border-[#e6d5c2]'
                                 }`}>
                                   Size {item.options.size}
                                 </span>
                               )}
                             </div>
-                            <span className="text-gray-600 text-xs font-semibold shrink-0 ml-2">
-                              {formatCurrency(item.price * item.quantity)}
-                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-gray-600 text-xs font-semibold">
+                                {formatCurrency(item.price * item.quantity)}
+                              </span>
+                              {onCancelItem && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCancelItem(order, item)}
+                                  className="p-1 text-red-500 hover:text-white hover:bg-red-600 rounded-md transition-all border border-red-200/60"
+                                  title={`Huỷ món ${item.name}`}
+                                >
+                                  <X size={12} strokeWidth={2.5} />
+                                </button>
+                              )}
+                            </div>
                           </div>
 
                           {/* Options pills */}
@@ -222,7 +284,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                             <div className="flex flex-wrap gap-1 mt-1 pl-6 text-[10px]">
                               {item.options?.size && (
                                 <span className={`px-1.5 py-0.5 rounded font-bold ${
-                                  item.options.size === 'L' ? 'bg-purple-50 text-purple-800' : 'bg-amber-50 text-amber-800'
+                                  item.options.size === 'L' ? 'bg-purple-50 text-purple-800' : 'bg-[#faf6f1] text-[#54331e]'
                                 }`}>
                                   Size {item.options.size}
                                 </span>
@@ -233,7 +295,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                                 </span>
                               )}
                               {item.options?.sweetener && (
-                                <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 font-semibold">
+                                <span className="px-1.5 py-0.5 rounded bg-[#faf6f1] text-[#54331e] font-semibold">
                                   {item.options.sweetener}
                                 </span>
                               )}
@@ -256,7 +318,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
 
                   <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between">
                     <span className="text-xs sm:text-sm text-gray-500 font-medium">Tổng ({totalItemsCount} món):</span>
-                    <span className="text-lg sm:text-xl font-black text-amber-600">{formatCurrency(order.total)}</span>
+                    <span className="text-lg sm:text-xl font-black text-[#54331e]">{formatCurrency(order.total)}</span>
                   </div>
                 </div>
 
@@ -271,7 +333,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 sm:py-3 px-3.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 touch-manipulation ${
                       isReady 
                         ? 'bg-green-600 hover:bg-green-700 text-white shadow-green-200' 
-                        : 'bg-gray-800 hover:bg-gray-900 text-white shadow-gray-200'
+                        : 'bg-[#54331e] hover:bg-[#442714] text-white shadow-[#54331e]/20'
                     }`}
                   >
                     <Receipt size={16} />
@@ -289,7 +351,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] animate-in fade-in slide-in-from-bottom-8 duration-200">
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-amber-500 text-white shrink-0">
+            <div className="p-4 sm:p-5 border-b border-[#4f331e] flex items-center justify-between bg-[#54331e] text-white shrink-0">
               <div className="flex items-center gap-2">
                 <Receipt size={20} />
                 <h3 className="text-base sm:text-xl font-black truncate">
@@ -324,7 +386,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                           <span className="font-semibold text-gray-800">{item.name}</span>
                           {item.options?.size && (
                             <span className={`px-1.5 py-0.2 rounded font-black text-[10px] uppercase shrink-0 ${
-                              item.options.size === 'L' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
+                              item.options.size === 'L' ? 'bg-purple-100 text-purple-800' : 'bg-[#f3eae0] text-[#54331e]'
                             }`}>
                               Size {item.options.size}
                             </span>
@@ -341,7 +403,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                           {item.options?.milkTemp && <span>• {item.options.milkTemp}</span>}
                           {item.options?.sweetener && <span>• {item.options.sweetener}</span>}
                           {item.options?.sweetness && <span>• {item.options.sweetness}</span>}
-                          {noteText && <span className="text-amber-700">• {noteText}</span>}
+                          {noteText && <span className="text-[#644127]">• {noteText}</span>}
                         </div>
                       )}
                     </div>
@@ -350,7 +412,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
 
                 <div className="pt-2 flex justify-between items-center text-base sm:text-lg font-black text-gray-900 border-t border-gray-200">
                   <span>Cần thanh toán:</span>
-                  <span className="text-xl sm:text-2xl text-amber-600">{formatCurrency(payingOrder.total)}</span>
+                  <span className="text-xl sm:text-2xl text-[#54331e]">{formatCurrency(payingOrder.total)}</span>
                 </div>
               </div>
 
@@ -365,7 +427,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                     onClick={() => setPaymentMethod('cash')}
                     className={`flex items-center justify-center gap-2 p-3 sm:p-3.5 rounded-2xl border-2 font-bold text-xs sm:text-sm transition-all ${
                       paymentMethod === 'cash'
-                        ? 'border-amber-500 bg-amber-50/50 text-amber-700'
+                        ? 'border-[#54331e] bg-[#faf6f1] text-[#54331e]'
                         : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
@@ -378,7 +440,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                     onClick={() => setPaymentMethod('transfer')}
                     className={`flex items-center justify-center gap-2 p-3 sm:p-3.5 rounded-2xl border-2 font-bold text-xs sm:text-sm transition-all ${
                       paymentMethod === 'transfer'
-                        ? 'border-amber-500 bg-amber-50/50 text-amber-700'
+                        ? 'border-[#54331e] bg-[#faf6f1] text-[#54331e]'
                         : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
@@ -399,7 +461,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                       type="number"
                       value={amountGiven}
                       onChange={e => setAmountGiven(e.target.value)}
-                      className="w-full text-lg sm:text-xl font-bold p-2.5 sm:p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none bg-white"
+                      className="w-full text-lg sm:text-xl font-bold p-2.5 sm:p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#644127] outline-none bg-white"
                       placeholder="Nhập số tiền khách đưa"
                     />
                   </div>
@@ -413,7 +475,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                           key={val}
                           type="button"
                           onClick={() => setAmountGiven(val.toString())}
-                          className="text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-amber-400 text-gray-700 transition-colors"
+                          className="text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#7c5434] text-gray-700 transition-colors"
                         >
                           {formatCurrency(val)}
                         </button>
@@ -460,7 +522,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                     <div className="text-xs text-gray-600 space-y-1 bg-white p-2.5 rounded-xl border border-gray-100 text-left">
                       <div className="flex justify-between items-center text-gray-800 font-bold">
                         <span>Số tiền:</span>
-                        <span className="text-base text-amber-600 font-black">{formatCurrency(payingOrder.total)}</span>
+                        <span className="text-base text-[#54331e] font-black">{formatCurrency(payingOrder.total)}</span>
                       </div>
                       
                       {!isCustomImage && (
@@ -480,7 +542,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                                   setCopiedAcc(true);
                                   setTimeout(() => setCopiedAcc(false), 2000);
                                 }}
-                                className="p-0.5 text-gray-400 hover:text-amber-600"
+                                className="p-0.5 text-gray-400 hover:text-[#644127]"
                                 title="Sao chép số tài khoản"
                               >
                                 {copiedAcc ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
@@ -493,7 +555,7 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
                           </div>
                           <div className="flex justify-between items-center text-[11px]">
                             <span className="text-gray-500">Nội dung CK:</span>
-                            <span className="font-mono font-bold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded">{memo}</span>
+                            <span className="font-mono font-bold text-[#54331e] bg-[#f3eae0] px-1.5 py-0.2 rounded">{memo}</span>
                           </div>
                         </>
                       )}
@@ -538,6 +600,30 @@ export default function ServingTab({ orders, onCompletePayment, paymentSettings 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Cancellation Modal */}
+      {cancelModalOpen && cancellingOrder && (
+        <CancelModal
+          isOpen={cancelModalOpen}
+          order={cancellingOrder}
+          targetItem={cancellingItem}
+          onClose={() => {
+            setCancelModalOpen(false);
+            setCancellingOrder(null);
+            setCancellingItem(null);
+          }}
+          onConfirmCancelItem={async (orderId, item, cancelQty, reason) => {
+            if (onCancelItem) {
+              await onCancelItem(orderId, item, cancelQty, reason);
+            }
+          }}
+          onConfirmCancelOrder={async (orderId, reason) => {
+            if (onCancelOrder) {
+              await onCancelOrder(orderId, reason);
+            }
+          }}
+        />
       )}
     </div>
   );

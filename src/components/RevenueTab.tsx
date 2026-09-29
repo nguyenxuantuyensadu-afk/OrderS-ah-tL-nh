@@ -18,7 +18,8 @@ import {
   Layers,
   ChevronRight,
   Flame,
-  Trophy
+  Trophy,
+  Coins
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -68,7 +69,13 @@ const TOP_RANK_COLORS = [
   '#ec4899', // #5 Pink
 ];
 
-export default function RevenueTab({ orders }: { orders: Order[] }) {
+export default function RevenueTab({ 
+  orders, 
+  onNavigateToProfit 
+}: { 
+  orders: Order[]; 
+  onNavigateToProfit?: () => void;
+}) {
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'active'>('completed');
   const [rangeDays, setRangeDays] = useState<number>(7); // 7, 14, 30, or 0 (all)
   const [selectedDayKey, setSelectedDayKey] = useState<string>('all');
@@ -337,7 +344,7 @@ export default function RevenueTab({ orders }: { orders: Order[] }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-900 uppercase tracking-wide">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[#f3eae0] text-[#54331e] uppercase tracking-wide">
                 Báo cáo & Phân tích
               </span>
               <span className="text-[11px] font-semibold text-gray-400 hidden sm:inline">
@@ -353,7 +360,7 @@ export default function RevenueTab({ orders }: { orders: Order[] }) {
             <button
               onClick={() => setRangeDays(7)}
               className={`flex-1 sm:flex-initial text-center px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[38px] flex items-center justify-center ${
-                rangeDays === 7 ? 'bg-amber-500 text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'
+                rangeDays === 7 ? 'bg-[#54331e] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               7 ngày
@@ -361,7 +368,7 @@ export default function RevenueTab({ orders }: { orders: Order[] }) {
             <button
               onClick={() => setRangeDays(14)}
               className={`flex-1 sm:flex-initial text-center px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[38px] flex items-center justify-center ${
-                rangeDays === 14 ? 'bg-amber-500 text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'
+                rangeDays === 14 ? 'bg-[#54331e] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               14 ngày
@@ -369,7 +376,7 @@ export default function RevenueTab({ orders }: { orders: Order[] }) {
             <button
               onClick={() => setRangeDays(30)}
               className={`flex-1 sm:flex-initial text-center px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[38px] flex items-center justify-center ${
-                rangeDays === 30 ? 'bg-amber-500 text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'
+                rangeDays === 30 ? 'bg-[#54331e] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               30 ngày
@@ -377,13 +384,40 @@ export default function RevenueTab({ orders }: { orders: Order[] }) {
             <button
               onClick={() => setRangeDays(0)}
               className={`flex-1 sm:flex-initial text-center px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[38px] flex items-center justify-center ${
-                rangeDays === 0 ? 'bg-amber-500 text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'
+                rangeDays === 0 ? 'bg-[#54331e] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               Tất cả
             </button>
           </div>
         </div>
+
+        {/* Quick Link to Monthly Profit & Ingredients Expense */}
+        {onNavigateToProfit && (
+          <div className="bg-[#faf6f1] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-[#e6d5c2] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#54331e] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Coins size={18} />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-black text-[#25150c] flex items-center gap-1.5">
+                  <span>Mục Lợi nhuận & Tiền mua nguyên liệu</span>
+                  <span className="px-1.5 py-0.2 bg-[#f3eae0] text-[#54331e] text-[10px] font-bold rounded-full">Mới</span>
+                </h4>
+                <p className="text-[11px] sm:text-xs text-[#7c6957] mt-0.5">
+                  Nhập chi phí mua nguyên vật liệu và tự động trừ vào doanh thu để tính lợi nhuận theo từng tháng.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onNavigateToProfit}
+              className="px-4 py-2 bg-[#54331e] hover:bg-[#402616] text-white rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-xs shrink-0 flex items-center justify-center gap-1.5"
+            >
+              <span>Xem báo cáo Lợi nhuận</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
         
         {/* Metric Cards - 2 cols on mobile, 4 on desktop */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
@@ -392,7 +426,7 @@ export default function RevenueTab({ orders }: { orders: Order[] }) {
           <div className="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xs border border-gray-100 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1.5 sm:mb-2">
               <span className="text-gray-400 font-bold text-[10px] sm:text-xs uppercase tracking-wider">Hôm nay</span>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#faf6f1] text-[#7c5434] flex items-center justify-center shrink-0">
                 <Calendar size={15} />
               </div>
             </div>
@@ -481,7 +515,7 @@ export default function RevenueTab({ orders }: { orders: Order[] }) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
             <div>
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-amber-100 rounded-lg text-amber-800 shrink-0">
+                <div className="p-1.5 bg-[#f3eae0] rounded-lg text-[#54331e] shrink-0">
                   <BarChart3 size={18} />
                 </div>
                 <h3 className="text-sm sm:text-lg font-black text-gray-800">

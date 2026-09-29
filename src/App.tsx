@@ -5,13 +5,14 @@ import { auth, db, sanitizeForFirestore } from './lib/firebase';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import firebaseConfig from '../firebase-applet-config.json';
-import { AppUser, MenuItem, Order, CartItem, PaymentSettings, PreparationOptionsSettings } from './types';
+import { AppUser, MenuItem, Order, CartItem, PaymentSettings, PreparationOptionsSettings, IngredientExpense } from './types';
 import { initialMenu, defaultPaymentSettings, defaultPreparationOptions } from './data';
 import Login from './components/Login';
 import OrderTab from './components/OrderTab';
 import KitchenTab from './components/KitchenTab';
 import ServingTab from './components/ServingTab';
 import RevenueTab from './components/RevenueTab';
+import ProfitTab from './components/ProfitTab';
 import AdminTab from './components/AdminTab';
 import OrderHistoryTab from './components/OrderHistoryTab';
 import { 
@@ -23,16 +24,18 @@ import {
   Settings, 
   LogOut,
   ShoppingBag,
-  History
+  History,
+  Coins
 } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'order' | 'kitchen' | 'serving' | 'history' | 'revenue' | 'admin'>('order');
+  const [activeTab, setActiveTab] = useState<'order' | 'kitchen' | 'serving' | 'history' | 'revenue' | 'profit' | 'admin'>('order');
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [expenses, setExpenses] = useState<IngredientExpense[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>(defaultPaymentSettings);
   const [optionsSettings, setOptionsSettings] = useState<PreparationOptionsSettings>(defaultPreparationOptions);
@@ -141,6 +144,14 @@ export default function App() {
       console.warn("Firestore orders subscription warning:", error.message);
     });
 
+    // Listen to Ingredient Expenses (for Monthly Profit calculation)
+    const unsubscribeExpenses = onSnapshot(collection(db, 'expenses'), (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IngredientExpense));
+      setExpenses(items);
+    }, (error) => {
+      console.warn("Firestore expenses subscription warning:", error.message);
+    });
+
     // Listen to Payment Settings (QR Code)
     const unsubscribePayment = onSnapshot(doc(db, 'settings', 'payment'), (docSnap) => {
       if (docSnap.exists()) {
@@ -183,6 +194,7 @@ export default function App() {
     return () => {
       unsubscribeMenu();
       unsubscribeOrders();
+      unsubscribeExpenses();
       unsubscribePayment();
       unsubscribeOptions();
       unsubscribeUsers();
@@ -225,6 +237,76 @@ export default function App() {
     }), { merge: true });
   };
 
+  // Workflow Action 4: Huỷ món lẻ khi món đã vào bếp
+  const handleCancelItem = async (
+    orderId: string, 
+    item: CartItem, 
+    cancelQty: number = 1, 
+    reason: string = ''
+  ) => {
+    if (!user) return;
+    const targetOrder = orders.find(o => o.id === orderId);
+    if (!targetOrder) return;
+
+    const updatedItems: CartItem[] = [];
+    let cancelledName = item.name;
+
+    for (const it of targetOrder.items) {
+      const isTarget = (it.cartItemId && item.cartItemId) 
+        ? it.cartItemId === item.cartItemId 
+        : (it.id === item.id && it.name === item.name && it.options?.size === item.options?.size);
+
+      if (isTarget) {
+        cancelledName = it.name;
+        if (it.quantity > cancelQty) {
+          updatedItems.push({
+            ...it,
+            quantity: it.quantity - cancelQty
+          });
+        }
+        // If cancelQty >= it.quantity, item is removed from the active ticket
+      } else {
+        updatedItems.push(it);
+      }
+    }
+
+    // If no items left, cancel the whole order
+    if (updatedItems.length === 0) {
+      await handleCancelOrder(orderId, reason || `Huỷ món cuối cùng (${cancelledName})`);
+      return;
+    }
+
+    // Recalculate total accurately taking into account custom size L price if set
+    const newTotal = updatedItems.reduce((sum, it) => {
+      const unitPrice = (it.options?.size === 'L' && it.priceL) ? it.priceL : it.price;
+      return sum + (unitPrice * it.quantity);
+    }, 0);
+
+    const cancelText = `Đã huỷ ${cancelQty}x ${cancelledName}${reason ? ` (${reason})` : ''}`;
+    const newNote = targetOrder.note 
+      ? (targetOrder.note.includes('Đã huỷ') ? `${targetOrder.note}; ${cancelText}` : `${targetOrder.note} | ${cancelText}`)
+      : cancelText;
+
+    await setDoc(doc(db, 'orders', orderId), sanitizeForFirestore({
+      items: updatedItems,
+      total: newTotal,
+      note: newNote,
+      lastModifiedAt: Date.now()
+    }), { merge: true });
+  };
+
+  // Workflow Action 5: Huỷ toàn bộ đơn hàng khi ở bếp hoặc chờ thu tiền
+  const handleCancelOrder = async (orderId: string, reason: string = '') => {
+    if (!user) return;
+    await setDoc(doc(db, 'orders', orderId), sanitizeForFirestore({
+      status: 'cancelled',
+      cancelledAt: Date.now(),
+      cancelledBy: user.uid,
+      cancelledByName: user.displayName || user.username || (user.email?.endsWith('@posmini.local') ? user.email.replace('@posmini.local', '') : user.email?.split('@')[0]) || 'Nhân viên',
+      cancelReason: reason || 'Khách huỷ món'
+    }), { merge: true });
+  };
+
   const handleSaveMenuItem = async (item: MenuItem) => {
     await setDoc(doc(db, 'menu', item.id), sanitizeForFirestore(item));
   };
@@ -251,6 +333,24 @@ export default function App() {
 
   const handleUpdateOptionsSettings = async (settings: PreparationOptionsSettings) => {
     await setDoc(doc(db, 'settings', 'preparation_options'), sanitizeForFirestore(settings));
+  };
+
+  const handleAddExpense = async (data: Omit<IngredientExpense, 'id' | 'createdAt'>) => {
+    const newId = `exp_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`;
+    const newExpense: IngredientExpense = {
+      id: newId,
+      createdAt: Date.now(),
+      ...data
+    };
+    await setDoc(doc(db, 'expenses', newId), sanitizeForFirestore(newExpense));
+  };
+
+  const handleUpdateExpense = async (id: string, data: Partial<IngredientExpense>) => {
+    await setDoc(doc(db, 'expenses', id), sanitizeForFirestore(data), { merge: true });
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    await deleteDoc(doc(db, 'expenses', id));
   };
 
   const handleClearOrders = async () => {
@@ -333,8 +433,8 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="h-screen bg-gray-100 flex items-center justify-center font-sans">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+      <div className="h-screen bg-[#f7f4ee] flex items-center justify-center font-sans">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#644127] border-t-transparent"></div>
       </div>
     );
   }
@@ -347,34 +447,35 @@ export default function App() {
   const readyCount = orders.filter(o => o.status === 'ready').length;
 
   return (
-    <div className="h-screen w-screen bg-gray-100 flex flex-col md:flex-row font-sans overflow-hidden">
+    <div className="h-screen w-screen bg-[#f7f4ee] flex flex-col md:flex-row font-sans overflow-hidden">
       {/* Sidebar for Desktop & Tablet (md:) */}
-      <aside className="hidden md:flex md:w-64 lg:w-72 bg-white border-r border-gray-200 flex-col z-20 shrink-0 h-full">
+      <aside className="hidden md:flex md:w-64 lg:w-72 bg-white border-r border-[#e6d5c2] flex-col z-20 shrink-0 h-full">
         {/* Brand */}
-        <div className="p-5 lg:p-6 flex items-center gap-3">
-          <div className="w-11 h-11 bg-gradient-to-tr from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center text-white shadow-md shadow-amber-200 shrink-0">
-            <Store size={22} strokeWidth={2.5} />
+        <div className="p-5 lg:p-6 flex items-center gap-3 border-b border-[#f3eae0]">
+          <div className="w-11 h-11 bg-gradient-to-br from-[#4f331e] via-[#644127] to-[#8c5b36] rounded-2xl flex items-center justify-center text-white shadow-md shadow-[#4f331e]/20 shrink-0">
+            <Coffee size={22} strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-xl font-black text-gray-800 tracking-tight leading-none">POS Mini</h1>
-            <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mt-1">Takeaway & Pha chế</p>
+            <h1 className="text-xl font-black text-[#25150c] tracking-tight leading-none">POS Mini</h1>
+            <p className="text-[11px] font-bold text-[#7c5434] uppercase tracking-wider mt-1">Specialty Coffee & Bar</p>
           </div>
         </div>
         
         {/* User Card */}
-        <div className="px-5 pb-3">
-          <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 flex items-center justify-between">
+        <div className="px-4 py-3">
+          <div className="bg-[#faf6f1] p-3 rounded-2xl border border-[#e6d5c2] flex items-center justify-between shadow-2xs">
             <div className="overflow-hidden min-w-0 pr-2">
-              <p className="text-sm font-bold text-gray-800 truncate">
+              <p className="text-sm font-bold text-[#342a22] truncate">
                 {user.displayName || user.username || (user.email?.endsWith('@posmini.local') ? user.email.replace('@posmini.local', '') : user.email)}
               </p>
-              <p className="text-[11px] font-bold text-amber-600 uppercase mt-0.5">
+              <p className="text-[11px] font-bold text-[#7c5434] uppercase mt-0.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#7c5434] inline-block"></span>
                 {user.role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}
               </p>
             </div>
             <button 
               onClick={signOut} 
-              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0" 
+              className="p-2 text-[#978370] hover:text-red-600 hover:bg-[#f3eae0] rounded-xl transition-colors shrink-0" 
               title="Đăng xuất"
             >
               <LogOut size={17} />
@@ -389,12 +490,12 @@ export default function App() {
             onClick={() => setActiveTab('order')}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all font-bold text-sm ${
               activeTab === 'order' 
-                ? 'bg-amber-500 text-white shadow-md shadow-amber-200' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-[#54331e] text-white shadow-md shadow-[#54331e]/25' 
+                : 'text-[#5f5043] hover:bg-[#faf6f1] hover:text-[#25150c]'
             }`}
           >
             <div className="flex items-center gap-3">
-              <Coffee size={20} className={activeTab === 'order' ? 'text-white' : 'text-gray-400'} />
+              <Coffee size={20} className={activeTab === 'order' ? 'text-white' : 'text-[#7c5434]'} />
               <span>Gọi món mang về</span>
             </div>
           </button>
@@ -404,17 +505,17 @@ export default function App() {
             onClick={() => setActiveTab('kitchen')}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all font-bold text-sm ${
               activeTab === 'kitchen' 
-                ? 'bg-orange-500 text-white shadow-md shadow-orange-200' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-[#7c5434] text-white shadow-md shadow-[#7c5434]/25' 
+                : 'text-[#5f5043] hover:bg-[#faf6f1] hover:text-[#25150c]'
             }`}
           >
             <div className="flex items-center gap-3">
-              <ChefHat size={20} className={activeTab === 'kitchen' ? 'text-white' : 'text-gray-400'} />
-              <span>Bếp / Bar</span>
+              <ChefHat size={20} className={activeTab === 'kitchen' ? 'text-white' : 'text-[#7c5434]'} />
+              <span>Bếp / Bar Pha chế</span>
             </div>
             {kitchenCount > 0 && (
               <span className={`px-2 py-0.5 rounded-full text-xs font-black shadow-xs ${
-                activeTab === 'kitchen' ? 'bg-white text-orange-600' : 'bg-orange-500 text-white animate-pulse'
+                activeTab === 'kitchen' ? 'bg-white text-[#7c5434]' : 'bg-[#7c5434] text-white animate-pulse'
               }`}>
                 {kitchenCount}
               </span>
@@ -426,17 +527,17 @@ export default function App() {
             onClick={() => setActiveTab('serving')}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all font-bold text-sm ${
               activeTab === 'serving' 
-                ? 'bg-green-600 text-white shadow-md shadow-green-200' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-[#435e38] text-white shadow-md shadow-[#435e38]/20' 
+                : 'text-[#5f5043] hover:bg-[#faf6f1] hover:text-[#25150c]'
             }`}
           >
             <div className="flex items-center gap-3">
-              <ShoppingBag size={20} className={activeTab === 'serving' ? 'text-white' : 'text-gray-400'} />
+              <ShoppingBag size={20} className={activeTab === 'serving' ? 'text-white' : 'text-[#7c5434]'} />
               <span>Giao đồ & Thu tiền</span>
             </div>
             {readyCount > 0 && (
               <span className={`px-2 py-0.5 rounded-full text-xs font-black shadow-xs ${
-                activeTab === 'serving' ? 'bg-white text-green-700' : 'bg-green-600 text-white animate-bounce'
+                activeTab === 'serving' ? 'bg-white text-[#435e38]' : 'bg-[#435e38] text-white animate-bounce'
               }`}>
                 {readyCount}
               </span>
@@ -448,12 +549,12 @@ export default function App() {
             onClick={() => setActiveTab('history')}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all font-bold text-sm ${
               activeTab === 'history' 
-                ? 'bg-amber-600 text-white shadow-md shadow-amber-200' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-[#8c5b36] text-white shadow-md shadow-[#8c5b36]/20' 
+                : 'text-[#5f5043] hover:bg-[#faf6f1] hover:text-[#25150c]'
             }`}
           >
             <div className="flex items-center gap-3">
-              <History size={20} className={activeTab === 'history' ? 'text-white' : 'text-gray-400'} />
+              <History size={20} className={activeTab === 'history' ? 'text-white' : 'text-[#7c5434]'} />
               <span>Lịch sử đối soát</span>
             </div>
           </button>
@@ -463,14 +564,34 @@ export default function App() {
             onClick={() => setActiveTab('revenue')}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all font-bold text-sm ${
               activeTab === 'revenue' 
-                ? 'bg-emerald-700 text-white shadow-md shadow-emerald-200' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-[#3b2415] text-white shadow-md shadow-[#3b2415]/25' 
+                : 'text-[#5f5043] hover:bg-[#faf6f1] hover:text-[#25150c]'
             }`}
           >
             <div className="flex items-center gap-3">
-              <DollarSign size={20} className={activeTab === 'revenue' ? 'text-white' : 'text-gray-400'} />
-              <span>Doanh thu</span>
+              <DollarSign size={20} className={activeTab === 'revenue' ? 'text-white' : 'text-[#7c5434]'} />
+              <span>Doanh thu & Thống kê</span>
             </div>
+          </button>
+
+          {/* Tab: Lợi nhuận (Theo tháng) */}
+          <button
+            onClick={() => setActiveTab('profit')}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all font-bold text-sm ${
+              activeTab === 'profit' 
+                ? 'bg-[#644127] text-white shadow-md shadow-[#644127]/25' 
+                : 'text-[#5f5043] hover:bg-[#faf6f1] hover:text-[#25150c]'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Coins size={20} className={activeTab === 'profit' ? 'text-white' : 'text-[#7c5434]'} />
+              <span>Lợi nhuận tháng</span>
+            </div>
+            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+              activeTab === 'profit' ? 'bg-white text-[#644127]' : 'bg-[#f3eae0] text-[#54331e]'
+            }`}>
+              Theo tháng
+            </span>
           </button>
           
           {/* Tab 6: Quản trị (Admin) */}
@@ -479,13 +600,13 @@ export default function App() {
               onClick={() => setActiveTab('admin')}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all font-bold text-sm ${
                 activeTab === 'admin' 
-                  ? 'bg-gray-800 text-white shadow-md' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-[#25150c] text-white shadow-md' 
+                  : 'text-[#5f5043] hover:bg-[#faf6f1] hover:text-[#25150c]'
               }`}
             >
               <div className="flex items-center gap-3">
-                <Settings size={20} className={activeTab === 'admin' ? 'text-white' : 'text-gray-400'} />
-                <span>Quản trị</span>
+                <Settings size={20} className={activeTab === 'admin' ? 'text-white' : 'text-[#7c5434]'} />
+                <span>Cài đặt Quản trị</span>
               </div>
             </button>
           )}
@@ -493,14 +614,14 @@ export default function App() {
       </aside>
 
       {/* Top Header on Mobile (< md) */}
-      <header className="md:hidden bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between z-20 shrink-0">
+      <header className="md:hidden bg-white/95 backdrop-blur-md border-b border-[#e6d5c2] px-3 py-2 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-xs">
-            <Store size={18} strokeWidth={2.5} />
+          <div className="w-8 h-8 bg-gradient-to-br from-[#4f331e] to-[#7c5434] rounded-xl flex items-center justify-center text-white shadow-xs">
+            <Coffee size={17} strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-sm font-black text-gray-800 leading-tight">POS Mini</h1>
-            <p className="text-[10px] font-bold text-amber-600 uppercase">Takeaway</p>
+            <h1 className="text-sm font-black text-[#25150c] leading-tight">POS Mini</h1>
+            <p className="text-[10px] font-bold text-[#7c5434] uppercase tracking-wider">Specialty Bar</p>
           </div>
         </div>
 
@@ -510,21 +631,35 @@ export default function App() {
             onClick={() => setActiveTab('revenue')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'revenue'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60'
+                ? 'bg-[#3b2415] text-white shadow-xs'
+                : 'bg-[#faf6f1] text-[#644127] hover:bg-[#f3eae0] border border-[#e6d5c2]'
             }`}
             title="Báo cáo doanh thu"
           >
-            <DollarSign size={13} className={activeTab === 'revenue' ? 'text-white' : 'text-emerald-600'} />
+            <DollarSign size={13} className={activeTab === 'revenue' ? 'text-white' : 'text-[#644127]'} />
             <span className="text-[11px]">Doanh thu</span>
           </button>
 
-          <span className="text-xs font-bold text-gray-700 max-w-[90px] truncate hidden sm:inline-block">
+          {/* Quick Profit Shortcut in Mobile Header */}
+          <button
+            onClick={() => setActiveTab('profit')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'profit'
+                ? 'bg-[#644127] text-white shadow-xs'
+                : 'bg-[#faf6f1] text-[#644127] hover:bg-[#f3eae0] border border-[#e6d5c2]'
+            }`}
+            title="Báo cáo lợi nhuận tháng"
+          >
+            <Coins size={13} className={activeTab === 'profit' ? 'text-white' : 'text-[#644127]'} />
+            <span className="text-[11px]">Lợi nhuận</span>
+          </button>
+
+          <span className="text-xs font-bold text-[#342a22] max-w-[90px] truncate hidden sm:inline-block">
             {user.displayName || user.username || (user.email?.endsWith('@posmini.local') ? user.email.replace('@posmini.local', '') : user.email)}
           </span>
           <button 
             onClick={signOut} 
-            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+            className="p-1.5 text-[#978370] hover:text-red-600 hover:bg-[#f3eae0] rounded-lg"
             title="Đăng xuất"
           >
             <LogOut size={16} />
@@ -536,7 +671,7 @@ export default function App() {
       <main className="flex-1 overflow-hidden relative flex flex-col pb-16 md:pb-0">
         {dataLoading ? (
           <div className="h-full flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-[#644127] border-t-transparent"></div>
           </div>
         ) : (
           <>
@@ -551,13 +686,20 @@ export default function App() {
               />
             )}
             {activeTab === 'kitchen' && (
-              <KitchenTab orders={orders} onMarkReady={handleMarkReady} />
+              <KitchenTab 
+                orders={orders} 
+                onMarkReady={handleMarkReady} 
+                onCancelItem={handleCancelItem}
+                onCancelOrder={handleCancelOrder}
+              />
             )}
             {activeTab === 'serving' && (
               <ServingTab 
                 orders={orders} 
                 onCompletePayment={handleCompletePayment}
                 paymentSettings={paymentSettings}
+                onCancelItem={handleCancelItem}
+                onCancelOrder={handleCancelOrder}
               />
             )}
             {activeTab === 'history' && (
@@ -567,7 +709,20 @@ export default function App() {
               />
             )}
             {activeTab === 'revenue' && (
-              <RevenueTab orders={orders} />
+              <RevenueTab 
+                orders={orders} 
+                onNavigateToProfit={() => setActiveTab('profit')}
+              />
+            )}
+            {activeTab === 'profit' && (
+              <ProfitTab 
+                orders={orders}
+                expenses={expenses}
+                currentUser={user}
+                onAddExpense={handleAddExpense}
+                onUpdateExpense={handleUpdateExpense}
+                onDeleteExpense={handleDeleteExpense}
+              />
             )}
             {activeTab === 'admin' && user.role === 'admin' && (
               <AdminTab 
@@ -593,15 +748,15 @@ export default function App() {
       </main>
 
       {/* Mobile Bottom Navigation Bar (< md) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-200 flex items-center justify-around px-0.5 z-30 shadow-lg">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-[#e6d5c2] flex items-center justify-around px-1 z-30 shadow-lg shadow-[#25150c]/5">
         {/* Nav 1: Gọi món */}
         <button
           onClick={() => setActiveTab('order')}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors min-w-0 ${
-            activeTab === 'order' ? 'text-amber-600 font-black' : 'text-gray-500 font-medium'
+            activeTab === 'order' ? 'text-[#54331e] font-black' : 'text-[#978370] font-medium'
           }`}
         >
-          <Coffee size={19} className={activeTab === 'order' ? 'text-amber-600' : 'text-gray-400'} />
+          <Coffee size={19} className={activeTab === 'order' ? 'text-[#54331e]' : 'text-[#978370]'} />
           <span className="text-[10px] mt-0.5 truncate max-w-full text-center">Gọi món</span>
         </button>
 
@@ -609,13 +764,13 @@ export default function App() {
         <button
           onClick={() => setActiveTab('kitchen')}
           className={`flex flex-col items-center justify-center flex-1 py-1 relative transition-colors min-w-0 ${
-            activeTab === 'kitchen' ? 'text-orange-600 font-black' : 'text-gray-500 font-medium'
+            activeTab === 'kitchen' ? 'text-[#7c5434] font-black' : 'text-[#978370] font-medium'
           }`}
         >
           <div className="relative">
-            <ChefHat size={19} className={activeTab === 'kitchen' ? 'text-orange-600' : 'text-gray-400'} />
+            <ChefHat size={19} className={activeTab === 'kitchen' ? 'text-[#7c5434]' : 'text-[#978370]'} />
             {kitchenCount > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-orange-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1.5 -right-2 bg-[#7c5434] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
                 {kitchenCount}
               </span>
             )}
@@ -627,13 +782,13 @@ export default function App() {
         <button
           onClick={() => setActiveTab('serving')}
           className={`flex flex-col items-center justify-center flex-1 py-1 relative transition-colors min-w-0 ${
-            activeTab === 'serving' ? 'text-green-600 font-black' : 'text-gray-500 font-medium'
+            activeTab === 'serving' ? 'text-[#435e38] font-black' : 'text-[#978370] font-medium'
           }`}
         >
           <div className="relative">
-            <ShoppingBag size={19} className={activeTab === 'serving' ? 'text-green-600' : 'text-gray-400'} />
+            <ShoppingBag size={19} className={activeTab === 'serving' ? 'text-[#435e38]' : 'text-[#978370]'} />
             {readyCount > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-green-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
+              <span className="absolute -top-1.5 -right-2 bg-[#435e38] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
                 {readyCount}
               </span>
             )}
@@ -645,10 +800,10 @@ export default function App() {
         <button
           onClick={() => setActiveTab('history')}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors min-w-0 ${
-            activeTab === 'history' ? 'text-blue-600 font-black' : 'text-gray-500 font-medium'
+            activeTab === 'history' ? 'text-[#8c5b36] font-black' : 'text-[#978370] font-medium'
           }`}
         >
-          <History size={19} className={activeTab === 'history' ? 'text-blue-600' : 'text-gray-400'} />
+          <History size={19} className={activeTab === 'history' ? 'text-[#8c5b36]' : 'text-[#978370]'} />
           <span className="text-[10px] mt-0.5 truncate max-w-full text-center">Lịch sử</span>
         </button>
 
@@ -656,22 +811,33 @@ export default function App() {
         <button
           onClick={() => setActiveTab('revenue')}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors min-w-0 ${
-            activeTab === 'revenue' ? 'text-emerald-700 font-black' : 'text-gray-500 font-medium'
+            activeTab === 'revenue' ? 'text-[#3b2415] font-black' : 'text-[#978370] font-medium'
           }`}
         >
-          <DollarSign size={19} className={activeTab === 'revenue' ? 'text-emerald-700' : 'text-gray-400'} />
+          <DollarSign size={19} className={activeTab === 'revenue' ? 'text-[#3b2415]' : 'text-[#978370]'} />
           <span className="text-[10px] mt-0.5 truncate max-w-full text-center font-bold">Doanh thu</span>
         </button>
 
-        {/* Nav 6: Quản trị (Chỉ hiển thị cho Quản trị viên) */}
+        {/* Nav 6: Lợi nhuận */}
+        <button
+          onClick={() => setActiveTab('profit')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors min-w-0 ${
+            activeTab === 'profit' ? 'text-[#644127] font-black' : 'text-[#978370] font-medium'
+          }`}
+        >
+          <Coins size={19} className={activeTab === 'profit' ? 'text-[#644127]' : 'text-[#978370]'} />
+          <span className="text-[10px] mt-0.5 truncate max-w-full text-center font-bold">Lợi nhuận</span>
+        </button>
+
+        {/* Nav 7: Quản trị (Chỉ hiển thị cho Quản trị viên) */}
         {user.role === 'admin' && (
           <button
             onClick={() => setActiveTab('admin')}
             className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors min-w-0 ${
-              activeTab === 'admin' ? 'text-gray-900 font-black' : 'text-gray-500 font-medium'
+              activeTab === 'admin' ? 'text-[#25150c] font-black' : 'text-[#978370] font-medium'
             }`}
           >
-            <Settings size={19} className={activeTab === 'admin' ? 'text-gray-900' : 'text-gray-400'} />
+            <Settings size={19} className={activeTab === 'admin' ? 'text-[#25150c]' : 'text-[#978370]'} />
             <span className="text-[10px] mt-0.5 truncate max-w-full text-center">Quản trị</span>
           </button>
         )}

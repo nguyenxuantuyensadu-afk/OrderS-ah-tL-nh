@@ -273,31 +273,31 @@ export default function OrderTab({
       />
 
       {/* Menu Area */}
-      <div className="flex-1 p-3 sm:p-5 lg:p-6 overflow-y-auto bg-gray-50/50 flex flex-col pb-24 lg:pb-6">
+      <div className="flex-1 p-3 sm:p-5 lg:p-6 overflow-y-auto bg-[#f7f4ee] flex flex-col pb-24 lg:pb-6">
         {/* Header & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-900 uppercase tracking-wide">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[#faf6f1] text-[#7c5434] border border-[#e6d5c2] uppercase tracking-wide">
                 Takeaway / Mang về
               </span>
-              <span className="text-[11px] font-semibold text-gray-500 hidden sm:inline">
+              <span className="text-[11px] font-semibold text-[#786655] hidden sm:inline">
                 • Bấm vào món để tùy chọn Sữa, Độ ngọt, Chất làm ngọt
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-gray-800 tracking-tight mt-1">Gọi món Takeaway</h2>
-            <p className="text-xs sm:text-sm text-gray-500">Chạm vào thẻ món hoặc bấm dấu (+) để mở nhanh tùy chọn pha chế</p>
+            <h2 className="text-xl sm:text-2xl font-black text-[#25150c] tracking-tight mt-1">Gọi món Takeaway</h2>
+            <p className="text-xs sm:text-sm text-[#786655]">Chạm vào thẻ món hoặc bấm dấu (+) để mở nhanh tùy chọn pha chế</p>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="relative flex-1 sm:w-72">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#978370]" size={17} />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Tìm món nhanh..."
-                className="w-full pl-9 pr-3.5 py-2 sm:py-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 outline-none shadow-xs min-h-[42px]"
+                className="w-full pl-9 pr-3.5 py-2 sm:py-2.5 bg-white border border-[#d5c8b8] rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#7c5434] focus:border-[#7c5434] outline-none shadow-xs min-h-[42px] text-[#342a22]"
               />
             </div>
             {userRole === 'admin' && onSaveMenuItem && (
@@ -307,7 +307,7 @@ export default function OrderTab({
                   setEditingMenuItem(null);
                   setIsMenuModalOpen(true);
                 }}
-                className="flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold px-3.5 py-2 sm:py-2.5 rounded-xl shadow-xs transition-all shrink-0 min-h-[42px]"
+                className="flex items-center justify-center gap-1.5 bg-[#54331e] hover:bg-[#3b2415] active:scale-95 text-white text-xs font-bold px-3.5 py-2 sm:py-2.5 rounded-xl shadow-md shadow-[#54331e]/20 transition-all shrink-0 min-h-[42px]"
                 title="Thêm món mới vào thực đơn"
               >
                 <Plus size={16} />
@@ -333,8 +333,8 @@ export default function OrderTab({
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all touch-manipulation ${
                 selectedCategory === cat
-                  ? 'bg-amber-500 text-white shadow-sm'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  ? 'bg-[#54331e] text-white shadow-md shadow-[#54331e]/20'
+                  : 'bg-white text-[#5f5043] hover:bg-[#faf6f1] border border-[#e6d5c2]'
               }`}
             >
               {cat === 'all' ? 'Tất cả món' : cat}
@@ -359,42 +359,42 @@ export default function OrderTab({
                     handleOpenCustomize(item);
                   }
                 }}
-                className={`bg-white p-3 sm:p-4 rounded-2xl shadow-xs border transition-all text-left flex flex-col justify-between active:scale-[0.98] cursor-pointer group relative hover:border-amber-400 hover:shadow-md ${
-                  countInCart > 0 ? 'border-amber-400 ring-2 ring-amber-100' : 'border-gray-200/80'
+                className={`bg-white p-3 sm:p-4 rounded-2xl shadow-xs border transition-all text-left flex flex-col justify-between active:scale-[0.98] cursor-pointer group relative hover:border-[#966b44] hover:shadow-md ${
+                  countInCart > 0 ? 'border-[#7c5434] ring-2 ring-[#e6d5c2]' : 'border-[#e6d5c2]'
                 }`}
               >
                 {countInCart > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[11px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-sm z-10">
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#54331e] text-white text-[11px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-sm z-10">
                     {countInCart}
                   </span>
                 )}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-1 flex-wrap">
-                      <span className="inline-block px-2 py-0.5 bg-amber-50 text-amber-700 font-bold text-[10px] sm:text-[11px] rounded-md">
+                      <span className="inline-block px-2 py-0.5 bg-[#faf6f1] text-[#7c5434] font-bold text-[10px] sm:text-[11px] rounded-md border border-[#e6d5c2]/60">
                         {item.category}
                       </span>
                       {itemSupportsSizes(item) && (
-                        <span className="inline-block px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200/80 font-black text-[10px] rounded-md">
+                        <span className="inline-block px-1.5 py-0.5 bg-[#f4efe9] text-[#54331e] border border-[#d5c8b8] font-black text-[10px] rounded-md">
                           Size M, L
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-1">
                       {item.hasOptions !== false ? (
-                        <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5 opacity-80 group-hover:opacity-100">
+                        <span className="text-[10px] text-[#7c5434] font-bold flex items-center gap-0.5 opacity-80 group-hover:opacity-100">
                           <SlidersHorizontal size={11} />
                           <span className="hidden sm:inline">Tùy chọn</span>
                         </span>
                       ) : (
-                        <span className="text-[10px] text-gray-400 font-medium">
+                        <span className="text-[10px] text-[#978370] font-medium">
                           Món sẵn
                         </span>
                       )}
 
                       {/* Admin Quick Edit / Delete */}
                       {userRole === 'admin' && (
-                        <div className="flex items-center gap-0.5 ml-1 pl-1 border-l border-gray-200" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-0.5 ml-1 pl-1 border-l border-[#e6d5c2]" onClick={e => e.stopPropagation()}>
                           <button
                             type="button"
                             onClick={(e) => {
@@ -402,7 +402,7 @@ export default function OrderTab({
                               setEditingMenuItem(item);
                               setIsMenuModalOpen(true);
                             }}
-                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all active:scale-90"
+                            className="p-1 text-[#978370] hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all active:scale-90"
                             title="Sửa món"
                             aria-label="Sửa món"
                           >
@@ -414,7 +414,7 @@ export default function OrderTab({
                               e.stopPropagation();
                               setItemToDelete(item);
                             }}
-                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all active:scale-90"
+                            className="p-1 text-[#978370] hover:text-red-600 hover:bg-red-50 rounded-md transition-all active:scale-90"
                             title="Xóa món"
                             aria-label="Xóa món"
                           >
@@ -424,13 +424,13 @@ export default function OrderTab({
                       )}
                     </div>
                   </div>
-                  <h3 className="font-bold text-gray-800 line-clamp-2 text-xs sm:text-sm group-hover:text-amber-600 transition-colors">
+                  <h3 className="font-bold text-[#342a22] line-clamp-2 text-xs sm:text-sm group-hover:text-[#54331e] transition-colors">
                     {item.name}
                   </h3>
                 </div>
 
-                <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-gray-50">
-                  <span className="font-extrabold text-gray-900 text-xs sm:text-sm">{formatCurrency(item.price)}</span>
+                <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-[#f4efe9]">
+                  <span className="font-extrabold text-[#25150c] text-xs sm:text-sm">{formatCurrency(item.price)}</span>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -444,8 +444,8 @@ export default function OrderTab({
                     title={item.hasOptions === false ? 'Thêm nhanh vào giỏ' : 'Bấm để chọn tùy chọn pha chế & thêm món'}
                     className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-xl font-black text-xs flex items-center gap-1 transition-all shadow-xs ${
                       item.hasOptions === false
-                        ? 'bg-gray-800 hover:bg-gray-900 text-white'
-                        : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200'
+                        ? 'bg-[#342a22] hover:bg-[#201914] text-white'
+                        : 'bg-[#54331e] hover:bg-[#3b2415] text-white shadow-md shadow-[#54331e]/20'
                     }`}
                   >
                     <Plus size={15} className="stroke-[3]" />
@@ -461,29 +461,29 @@ export default function OrderTab({
       </div>
 
       {/* Floating Bottom Bar for Mobile Screen (< lg) */}
-      <div className="lg:hidden fixed bottom-16 left-0 right-0 p-2.5 z-30 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-xl">
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 p-2.5 z-30 bg-white/95 backdrop-blur-md border-t border-[#e6d5c2] shadow-xl shadow-[#25150c]/8">
         <div className="flex items-center gap-2 max-w-lg mx-auto">
           <button
             onClick={() => setIsMobileCartOpen(true)}
-            className="flex-1 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-left active:bg-amber-100 transition-colors"
+            className="flex-1 flex items-center justify-between bg-[#faf6f1] border border-[#e6d5c2] rounded-xl px-3 py-2.5 text-left active:bg-[#f3eae0] transition-colors"
           >
             <div className="flex items-center gap-2">
               <div className="relative">
-                <ShoppingCart size={20} className="text-amber-600" />
+                <ShoppingCart size={20} className="text-[#54331e]" />
                 {totalQuantity > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-amber-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 bg-[#54331e] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">
                     {totalQuantity}
                   </span>
                 )}
               </div>
               <div className="leading-tight">
-                <p className="text-[11px] text-gray-500 font-medium">
+                <p className="text-[11px] text-[#786655] font-medium">
                   {customerName.trim() ? `Khách: ${customerName}` : 'Khách mang về'}
                 </p>
-                <p className="text-sm font-black text-amber-700">{formatCurrency(total)}</p>
+                <p className="text-sm font-black text-[#3b2415]">{formatCurrency(total)}</p>
               </div>
             </div>
-            <div className="flex items-center text-xs font-bold text-amber-700">
+            <div className="flex items-center text-xs font-bold text-[#7c5434]">
               <span>Xem giỏ</span>
               <ChevronUp size={16} />
             </div>
@@ -492,7 +492,7 @@ export default function OrderTab({
           <button
             onClick={handleSendOrder}
             disabled={cart.length === 0 || isSending}
-            className="bg-orange-500 hover:bg-orange-600 active:scale-95 disabled:bg-gray-200 disabled:text-gray-400 text-white font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0"
+            className="bg-[#54331e] hover:bg-[#3b2415] active:scale-95 disabled:bg-[#d5c8b8] disabled:text-[#978370] text-white font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-md shadow-[#54331e]/20 transition-all flex items-center gap-1.5 shrink-0"
           >
             {isSending ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -508,49 +508,49 @@ export default function OrderTab({
 
       {/* Cart Container: Responsive Sidebar on Desktop (lg:), Slide-up Drawer on Mobile */}
       <div 
-        className={`fixed lg:static inset-x-0 bottom-0 z-40 lg:z-10 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col w-full lg:w-[410px] xl:w-[450px] shadow-2xl lg:shadow-none transition-transform duration-300 ease-out rounded-t-3xl lg:rounded-none h-[82vh] lg:h-full ${
+        className={`fixed lg:static inset-x-0 bottom-0 z-40 lg:z-10 bg-white border-t lg:border-t-0 lg:border-l border-[#e6d5c2] flex flex-col w-full lg:w-[410px] xl:w-[450px] shadow-2xl lg:shadow-none transition-transform duration-300 ease-out rounded-t-3xl lg:rounded-none h-[82vh] lg:h-full ${
           isMobileCartOpen ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'
         }`}
       >
         {/* Mobile Drag/Close Bar */}
-        <div className="lg:hidden flex items-center justify-between p-3 border-b border-gray-100 bg-gray-50/80 rounded-t-3xl">
+        <div className="lg:hidden flex items-center justify-between p-3 border-b border-[#f3eae0] bg-[#faf6f1] rounded-t-3xl">
           <div className="flex items-center gap-2">
-            <ShoppingCart size={18} className="text-amber-600" />
-            <span className="font-black text-sm text-gray-800">Phiếu Order ({totalQuantity} món)</span>
+            <ShoppingCart size={18} className="text-[#54331e]" />
+            <span className="font-black text-sm text-[#25150c]">Phiếu Order ({totalQuantity} món)</span>
           </div>
           <button 
             onClick={() => setIsMobileCartOpen(false)}
-            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-200"
+            className="p-1.5 text-[#978370] hover:text-[#342a22] rounded-full hover:bg-[#f3eae0]"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Desktop Cart Header */}
-        <div className="hidden lg:flex p-4 border-b border-gray-100 items-center gap-3 bg-white">
-          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-200 shrink-0">
+        <div className="hidden lg:flex p-4 border-b border-[#f3eae0] items-center gap-3 bg-white">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4f331e] to-[#7c5434] text-white flex items-center justify-center shadow-md shadow-[#4f331e]/20 shrink-0">
             <ShoppingCart size={20} />
           </div>
           <div>
-            <h2 className="text-lg font-black text-gray-800">Phiếu Order Takeaway</h2>
-            <p className="text-xs text-gray-400 font-medium">Tên khách & chi tiết tùy chọn pha chế</p>
+            <h2 className="text-lg font-black text-[#25150c]">Phiếu Order Takeaway</h2>
+            <p className="text-xs text-[#978370] font-medium">Tên khách & chi tiết tùy chọn pha chế</p>
           </div>
           {cart.length > 0 && (
-            <span className="bg-amber-500 text-white px-2.5 py-0.5 rounded-full text-xs font-bold ml-auto">
+            <span className="bg-[#54331e] text-white px-2.5 py-0.5 rounded-full text-xs font-bold ml-auto shadow-xs">
               {totalQuantity} món
             </span>
           )}
         </div>
 
         {/* Customer Name & Note Inputs */}
-        <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/60 space-y-2.5">
+        <div className="p-3 sm:p-4 border-b border-[#f3eae0] bg-[#faf6f1]/70 space-y-2.5">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                <User size={13} className="text-amber-600" />
+              <label className="text-xs font-bold text-[#4a3e34] uppercase tracking-wider flex items-center gap-1.5">
+                <User size={13} className="text-[#7c5434]" />
                 <span>Tên khách hàng</span>
               </label>
-              <span className="text-[11px] text-gray-400">Dùng gọi món</span>
+              <span className="text-[11px] text-[#978370]">Dùng gọi món</span>
             </div>
 
             <input
@@ -558,7 +558,7 @@ export default function OrderTab({
               placeholder="Nhập tên khách (VD: Anh Nam, Chị Lan)..."
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs sm:text-sm font-semibold text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-amber-500 outline-none shadow-2xs"
+              className="w-full px-3 py-2 bg-white border border-[#d5c8b8] rounded-xl text-xs sm:text-sm font-semibold text-[#25150c] placeholder-[#978370] focus:ring-2 focus:ring-[#7c5434] outline-none shadow-2xs"
             />
 
             {/* Quick Name Suggestions */}
@@ -570,8 +570,8 @@ export default function OrderTab({
                   onClick={() => setCustomerName(name)}
                   className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
                     customerName === name
-                      ? 'bg-amber-500 text-white font-bold'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                      ? 'bg-[#54331e] text-white font-bold shadow-2xs'
+                      : 'bg-white text-[#5f5043] border border-[#e6d5c2] hover:bg-[#faf6f1]'
                   }`}
                 >
                   {name}
@@ -586,20 +586,20 @@ export default function OrderTab({
               placeholder="Ghi chú chung cả đơn: mang đi túi riêng, vội..."
               value={note}
               onChange={e => setNote(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 outline-none"
+              className="w-full px-3 py-1.5 bg-white border border-[#d5c8b8] rounded-xl text-xs text-[#25150c] placeholder-[#978370] focus:ring-2 focus:ring-[#7c5434] outline-none"
             />
           </div>
         </div>
         
         {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 bg-gray-50/30">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 bg-[#faf8f5]/60">
           {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2 py-8">
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                <Coffee size={22} className="text-gray-300" />
+            <div className="h-full flex flex-col items-center justify-center text-[#978370] space-y-2 py-8">
+              <div className="w-12 h-12 rounded-full bg-[#f4efe9] flex items-center justify-center">
+                <Coffee size={22} className="text-[#b8a693]" />
               </div>
-              <p className="text-gray-400 text-xs font-medium">Chưa chọn món nào</p>
-              <p className="text-[11px] text-gray-400 max-w-[200px] text-center">
+              <p className="text-[#5f5043] text-xs font-bold">Chưa chọn món nào</p>
+              <p className="text-[11px] text-[#978370] max-w-[200px] text-center">
                 Bấm vào các món bên trái để chọn tùy chọn pha chế
               </p>
             </div>
@@ -611,17 +611,17 @@ export default function OrderTab({
               return (
                 <div 
                   key={itemId} 
-                  className="bg-white p-3 rounded-2xl border border-gray-200/90 shadow-2xs hover:border-amber-300 transition-all flex flex-col gap-2"
+                  className="bg-white p-3 rounded-2xl border border-[#e6d5c2] shadow-2xs hover:border-[#b8a693] transition-all flex flex-col gap-2"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-black text-gray-800 text-xs sm:text-sm truncate">{item.name}</h4>
+                        <h4 className="font-black text-[#25150c] text-xs sm:text-sm truncate">{item.name}</h4>
                         {item.options?.size && (
                           <span className={`px-1.5 py-0.2 rounded font-black text-[10px] uppercase shrink-0 ${
                             item.options.size === 'L' 
-                              ? 'bg-purple-100 text-purple-800 border border-purple-200' 
-                              : 'bg-amber-100 text-amber-800 border border-amber-200'
+                              ? 'bg-[#f4efe9] text-[#54331e] border border-[#d5c8b8]' 
+                              : 'bg-[#faf6f1] text-[#7c5434] border border-[#e6d5c2]'
                           }`}>
                             Size {item.options.size}
                           </span>
@@ -629,28 +629,28 @@ export default function OrderTab({
                         <button
                           type="button"
                           onClick={() => handleOpenCustomize(item, item)}
-                          className="text-gray-400 hover:text-amber-600 p-0.5 rounded transition-colors"
+                          className="text-[#978370] hover:text-[#54331e] p-0.5 rounded transition-colors"
                           title="Sửa lựa chọn món này"
                         >
                           <SlidersHorizontal size={13} />
                         </button>
                       </div>
-                      <div className="text-xs font-bold text-amber-600 mt-0.5">
+                      <div className="text-xs font-bold text-[#7c5434] mt-0.5">
                         {formatCurrency(item.price)} × {item.quantity} = {formatCurrency(item.price * item.quantity)}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1 border border-gray-200 shrink-0">
+                    <div className="flex items-center gap-1 bg-[#faf8f5] rounded-xl p-1 border border-[#e6d5c2] shrink-0">
                       <button 
                         onClick={() => updateQuantity(itemId, -1)} 
-                        className="p-1 hover:bg-white rounded-lg text-gray-600 transition-colors"
+                        className="p-1 hover:bg-white rounded-lg text-[#5f5043] transition-colors"
                       >
                         {item.quantity === 1 ? <Trash2 size={13} className="text-red-500" /> : <Minus size={13} />}
                       </button>
-                      <span className="w-5 text-center font-black text-xs text-gray-800">{item.quantity}</span>
+                      <span className="w-5 text-center font-black text-xs text-[#25150c]">{item.quantity}</span>
                       <button 
                         onClick={() => updateQuantity(itemId, 1)} 
-                        className="p-1 hover:bg-white rounded-lg text-gray-600 transition-colors"
+                        className="p-1 hover:bg-white rounded-lg text-[#5f5043] transition-colors"
                       >
                         <Plus size={13} />
                       </button>
@@ -659,36 +659,36 @@ export default function OrderTab({
 
                   {/* Badges for selected options: Sweetener, Milk/Temp, Sweetness */}
                   {hasOptions && (
-                    <div className="pt-1.5 border-t border-gray-100 flex flex-wrap items-center gap-1 text-[11px]">
+                    <div className="pt-1.5 border-t border-[#f4efe9] flex flex-wrap items-center gap-1 text-[11px]">
                       {item.options?.size && (
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md font-bold ${
-                          item.options.size === 'L' ? 'bg-purple-50 text-purple-800' : 'bg-amber-50 text-amber-800'
+                          item.options.size === 'L' ? 'bg-[#f4efe9] text-[#54331e]' : 'bg-[#faf6f1] text-[#7c5434]'
                         }`}>
                           Size {item.options.size}
                         </span>
                       )}
 
                       {item.options?.milkTemp && (
-                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold">
+                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 font-semibold border border-blue-200/60">
                           {item.options.milkTemp.includes('Lạnh') ? <Snowflake size={11} /> : <Flame size={11} />}
                           <span>{item.options.milkTemp}</span>
                         </span>
                       )}
 
                       {item.options?.sweetener && (
-                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 font-semibold">
+                        <span className="px-2 py-0.5 rounded-md bg-[#faf6f1] text-[#7c5434] font-semibold border border-[#e6d5c2]/60">
                           Chất ngọt: {item.options.sweetener}
                         </span>
                       )}
 
                       {item.options?.sweetness && (
-                        <span className="px-2 py-0.5 rounded-md bg-green-50 text-green-700 font-semibold">
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 font-semibold border border-amber-200/60">
                           Độ ngọt: {item.options.sweetness}
                         </span>
                       )}
 
                       {item.options?.itemNote && (
-                        <span className="w-full text-[11px] text-amber-900 bg-amber-50/70 px-2 py-0.5 rounded-md font-medium">
+                        <span className="w-full text-[11px] text-[#4f331e] bg-[#faf6f1] border border-[#e6d5c2] px-2 py-0.5 rounded-md font-medium">
                           Ghi chú: {item.options.itemNote}
                         </span>
                       )}
@@ -701,18 +701,18 @@ export default function OrderTab({
         </div>
 
         {/* Action Footer */}
-        <div className="p-3 sm:p-4 border-t border-gray-200 bg-white">
+        <div className="p-3 sm:p-4 border-t border-[#e6d5c2] bg-white">
           <div className="flex justify-between items-center mb-2.5">
-            <span className="text-gray-600 text-xs sm:text-sm">
-              Khách: <strong className="text-gray-900">{finalCustomerName}</strong>
+            <span className="text-[#5f5043] text-xs sm:text-sm">
+              Khách: <strong className="text-[#25150c]">{finalCustomerName}</strong>
             </span>
-            <span className="text-xl sm:text-2xl font-black text-amber-600">{formatCurrency(total)}</span>
+            <span className="text-xl sm:text-2xl font-black text-[#25150c]">{formatCurrency(total)}</span>
           </div>
           
           <button
             onClick={handleSendOrder}
             disabled={cart.length === 0 || isSending}
-            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-98 disabled:from-gray-200 disabled:to-gray-200 disabled:text-gray-400 text-white font-extrabold text-sm sm:text-base py-3 rounded-xl transition-all shadow-md shadow-orange-200 flex items-center justify-center gap-2 touch-manipulation"
+            className="w-full bg-gradient-to-r from-[#4f331e] via-[#644127] to-[#7c5434] hover:from-[#3b2415] hover:to-[#54331e] active:scale-98 disabled:from-[#d5c8b8] disabled:to-[#d5c8b8] disabled:text-[#978370] text-white font-extrabold text-sm sm:text-base py-3 rounded-xl transition-all shadow-md shadow-[#4f331e]/20 flex items-center justify-center gap-2 touch-manipulation"
           >
             {isSending ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

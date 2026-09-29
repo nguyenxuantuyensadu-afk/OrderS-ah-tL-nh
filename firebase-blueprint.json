@@ -63,6 +63,25 @@
         "sweetnessLevels": { "type": "array" },
         "quickNotes": { "type": "array" }
       }
+    },
+    "IngredientExpense": {
+      "title": "IngredientExpense",
+      "description": "Ingredient and material purchase expenses for calculating monthly profit",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "monthKey": { "type": "string" },
+        "category": { "type": "string" },
+        "supplier": { "type": "string" },
+        "note": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "createdBy": { "type": "string" },
+        "createdByName": { "type": "string" }
+      },
+      "required": ["id", "name", "amount", "date", "monthKey", "createdAt"]
     }
   },
   "firestore": {
@@ -81,6 +100,10 @@
     "/settings/{settingId}": {
       "schema": { "$ref": "#/entities/AppSettings" },
       "description": "Payment QR and custom options settings"
+    },
+    "/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/IngredientExpense" },
+      "description": "Ingredient and material purchase expenses for monthly profit calculation"
     }
   }
 }

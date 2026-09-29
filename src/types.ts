@@ -64,6 +64,7 @@ export interface CartItem extends MenuItem {
   quantity: number;
   options?: ItemOptions;
   itemNote?: string;
+  cancelled?: boolean;
 }
 
 export type OrderStatus = 'in_kitchen' | 'ready' | 'completed' | 'cancelled';
@@ -77,10 +78,29 @@ export interface Order {
   timestamp: number;
   readyAt?: number;
   completedAt?: number;
+  cancelledAt?: number;
+  cancelledBy?: string;
+  cancelledByName?: string;
+  cancelReason?: string;
+  lastModifiedAt?: number;
   status: OrderStatus;
   items: CartItem[];
   total: number;
   paymentMethod?: 'cash' | 'transfer';
+  createdBy?: string;
+  createdByName?: string;
+}
+
+export interface IngredientExpense {
+  id: string;
+  name: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  monthKey: string; // YYYY-MM e.g. "2026-09"
+  category?: string;
+  supplier?: string;
+  note?: string;
+  createdAt: number;
   createdBy?: string;
   createdByName?: string;
 }

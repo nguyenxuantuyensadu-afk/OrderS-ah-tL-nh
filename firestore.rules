@@ -40,5 +40,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAuthenticated();
     }
+
+    match /expenses/{expenseId} {
+      // Authenticated users (admin and staff) can read and manage ingredient expense records
+      allow read, create, update, delete: if isAuthenticated();
+    }
   }
 }
