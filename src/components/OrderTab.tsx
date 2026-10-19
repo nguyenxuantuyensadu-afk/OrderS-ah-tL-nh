@@ -17,8 +17,7 @@ import {
   ChevronUp, 
   X,
   SlidersHorizontal,
-  Flame,
-  Snowflake
+  FileText
 } from 'lucide-react';
 
 interface OrderTabProps {
@@ -30,7 +29,7 @@ interface OrderTabProps {
   onDeleteMenuItem?: (id: string) => Promise<void>;
 }
 
-const QUICK_NAMES = ['Khách mang về', 'Khách quen', 'Anh Nam', 'Chị Lan', 'Anh Tuấn', 'Chị Mai'];
+const QUICK_CUSTOMERS = ['Mang về', 'Tại quán', 'Khách quen', 'Anh', 'Chị'];
 
 export default function OrderTab({ 
   menu, 
@@ -43,6 +42,7 @@ export default function OrderTab({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState<string>('');
   const [note, setNote] = useState<string>('');
+  const [showNoteInput, setShowNoteInput] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -96,7 +96,6 @@ export default function OrderTab({
 
     setCart(prev => {
       if (editingCartItem) {
-        // Editing existing cart item
         return prev.map(ci => {
           if (ci.cartItemId === editingCartItem.cartItemId) {
             const updated: CartItem = {
@@ -116,7 +115,6 @@ export default function OrderTab({
         });
       }
 
-      // Check if identical item with identical options already exists
       const existingIndex = prev.findIndex(ci => ci.id === item.id && areOptionsEqual(ci.options, options));
       if (existingIndex > -1) {
         const updated = [...prev];
@@ -128,7 +126,6 @@ export default function OrderTab({
         return updated;
       }
 
-      // Add new cart item with unique cartItemId
       const newCartItem: CartItem = {
         ...finalItem,
         cartItemId: `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -148,16 +145,16 @@ export default function OrderTab({
   const handleAdminSaveMenuItem = async (itemData: MenuItem) => {
     if (!onSaveMenuItem) return;
     await onSaveMenuItem(itemData);
-    setItemToast(editingMenuItem ? `Đã cập nhật món "${itemData.name}" thành công!` : `Đã thêm món "${itemData.name}" vào thực đơn!`);
-    setTimeout(() => setItemToast(null), 3500);
+    setItemToast(editingMenuItem ? `Đã cập nhật món "${itemData.name}"` : `Đã thêm món "${itemData.name}"`);
+    setTimeout(() => setItemToast(null), 3000);
   };
 
   const handleAdminDeleteMenuItem = async (id: string) => {
     if (!onDeleteMenuItem) return;
     const found = menu.find(m => m.id === id);
     await onDeleteMenuItem(id);
-    setItemToast(`Đã xóa món "${found?.name || id}" khỏi thực đơn!`);
-    setTimeout(() => setItemToast(null), 3500);
+    setItemToast(`Đã xóa món "${found?.name || id}"`);
+    setTimeout(() => setItemToast(null), 3000);
   };
 
   const handleConfirmDeleteItem = async () => {
@@ -167,27 +164,28 @@ export default function OrderTab({
       await handleAdminDeleteMenuItem(itemToDelete.id);
       setItemToDelete(null);
     } catch (err: any) {
-      alert('Lỗi khi xóa món: ' + (err?.message || 'Thử lại sau'));
+      console.error('Lỗi khi xóa món:', err);
     } finally {
       setIsDeletingItem(false);
     }
   };
 
-  // Quick direct add (uses standard defaults)
+  // Quick direct add (uses standard defaults in 1 tap)
   const quickAddToCart = (item: MenuItem, e?: MouseEvent) => {
     if (e) e.stopPropagation();
 
-    // Default options
     const isCoffee = item.category.toLowerCase().includes('cà phê') || item.name.toLowerCase().includes('cà phê');
     const defaultSweetener = (isCoffee && item.name.toLowerCase().includes('sữa')) ? 'Sữa đặc' : 'Đường cát';
     const hasSizes = itemSupportsSizes(item);
 
-    const defaultOptions: ItemOptions = {
-      size: hasSizes ? 'M' : undefined,
-      sweetener: defaultSweetener,
-      milkTemp: 'Đá (Lạnh)',
-      sweetness: '100% ngọt',
-    };
+    const defaultOptions: ItemOptions = item.hasOptions === false
+      ? {}
+      : {
+          size: hasSizes ? 'M' : undefined,
+          sweetener: defaultSweetener,
+          milkTemp: 'Đá (Lạnh)',
+          sweetness: '100% ngọt',
+        };
 
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id && areOptionsEqual(i.options, defaultOptions));
@@ -200,7 +198,7 @@ export default function OrderTab({
           ...item,
           cartItemId: `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
           quantity: 1,
-          options: defaultOptions,
+          options: Object.keys(defaultOptions).length > 0 ? defaultOptions : undefined,
         },
       ];
     });
@@ -229,9 +227,10 @@ export default function OrderTab({
       setCart([]);
       setCustomerName('');
       setNote('');
+      setShowNoteInput(false);
       setIsMobileCartOpen(false);
-      setSuccessToast(`Đã gửi order cho "${name}" vào bếp thành công!`);
-      setTimeout(() => setSuccessToast(null), 3500);
+      setSuccessToast(`Đã gửi đơn "${name}" vào bếp!`);
+      setTimeout(() => setSuccessToast(null), 3000);
     } catch (error) {
       console.error(error);
     } finally {
@@ -245,15 +244,24 @@ export default function OrderTab({
     return matchCat && matchSearch;
   });
 
+  // Format concise summary of item options
+  const formatOptionsSummary = (options?: ItemOptions) => {
+    if (!options) return null;
+    const parts: string[] = [];
+    if (options.size) parts.push(`Size ${options.size}`);
+    if (options.milkTemp) parts.push(options.milkTemp);
+    if (options.sweetener) parts.push(options.sweetener);
+    if (options.sweetness) parts.push(options.sweetness);
+    return parts.length > 0 ? parts.join(' · ') : null;
+  };
+
   return (
     <div className="flex flex-col lg:flex-row h-full relative overflow-hidden">
       {/* Toast Notification */}
       {successToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900/95 backdrop-blur-sm text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-gray-700 max-w-[90vw] animate-in fade-in slide-in-from-top-4 duration-200">
-          <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-white shrink-0">
-            <CheckCircle2 size={18} />
-          </div>
-          <span className="font-bold text-xs sm:text-sm line-clamp-1">{successToast}</span>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#25150c] text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 border border-[#54331e] max-w-[90vw] animate-in fade-in slide-in-from-top-4 duration-150">
+          <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+          <span className="font-bold text-xs sm:text-sm truncate">{successToast}</span>
         </div>
       )}
 
@@ -272,78 +280,73 @@ export default function OrderTab({
         optionsSettings={optionsSettings}
       />
 
-      {/* Menu Area */}
-      <div className="flex-1 p-3 sm:p-5 lg:p-6 overflow-y-auto bg-[#f7f4ee] flex flex-col pb-24 lg:pb-6">
-        {/* Header & Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[#faf6f1] text-[#7c5434] border border-[#e6d5c2] uppercase tracking-wide">
-                Takeaway / Mang về
-              </span>
-              <span className="text-[11px] font-semibold text-[#786655] hidden sm:inline">
-                • Bấm vào món để tùy chọn Sữa, Độ ngọt, Chất làm ngọt
-              </span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-[#25150c] tracking-tight mt-1">Gọi món Takeaway</h2>
-            <p className="text-xs sm:text-sm text-[#786655]">Chạm vào thẻ món hoặc bấm dấu (+) để mở nhanh tùy chọn pha chế</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 sm:w-72">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#978370]" size={17} />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder="Tìm món nhanh..."
-                className="w-full pl-9 pr-3.5 py-2 sm:py-2.5 bg-white border border-[#d5c8b8] rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#7c5434] focus:border-[#7c5434] outline-none shadow-xs min-h-[42px] text-[#342a22]"
-              />
-            </div>
-            {userRole === 'admin' && onSaveMenuItem && (
+      {/* Left / Main Area: Menu Browser */}
+      <div className="flex-1 p-3 sm:p-4 lg:p-5 overflow-y-auto bg-[#f7f4ee] flex flex-col pb-24 lg:pb-5">
+        {/* Streamlined Top Search & Action Bar */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#978370]" size={16} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Tìm nhanh tên món..."
+              className="w-full pl-9 pr-8 py-2 bg-white border border-[#d5c8b8] rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#7c5434] focus:border-[#7c5434] outline-none min-h-[40px] text-[#25150c] placeholder-[#978370]"
+            />
+            {searchTerm && (
               <button
                 type="button"
-                onClick={() => {
-                  setEditingMenuItem(null);
-                  setIsMenuModalOpen(true);
-                }}
-                className="flex items-center justify-center gap-1.5 bg-[#54331e] hover:bg-[#3b2415] active:scale-95 text-white text-xs font-bold px-3.5 py-2 sm:py-2.5 rounded-xl shadow-md shadow-[#54331e]/20 transition-all shrink-0 min-h-[42px]"
-                title="Thêm món mới vào thực đơn"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#978370] hover:text-[#25150c] p-0.5"
               >
-                <Plus size={16} />
-                <span className="hidden sm:inline">Thêm món</span>
+                <X size={14} />
               </button>
             )}
           </div>
+
+          {userRole === 'admin' && onSaveMenuItem && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingMenuItem(null);
+                setIsMenuModalOpen(true);
+              }}
+              className="flex items-center justify-center gap-1.5 bg-[#54331e] hover:bg-[#3b2415] active:scale-95 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shrink-0 min-h-[40px] whitespace-nowrap"
+              title="Thêm món mới vào thực đơn"
+            >
+              <Plus size={15} />
+              <span>Thêm món</span>
+            </button>
+          )}
         </div>
 
         {/* Action Toast for Admin */}
         {itemToast && (
-          <div className="mb-3 p-3 bg-green-50 border border-green-200 text-green-800 rounded-xl flex items-center gap-2 text-xs font-bold shadow-xs animate-in fade-in">
-            <CheckCircle2 size={16} className="text-green-600 shrink-0" />
+          <div className="mb-2.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 text-xs font-bold animate-in fade-in">
+            <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
             <span>{itemToast}</span>
           </div>
         )}
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2.5 mb-3 scrollbar-none -mx-1 px-1">
+        {/* Category Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none -mx-1 px-1">
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all touch-manipulation ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all touch-manipulation ${
                 selectedCategory === cat
-                  ? 'bg-[#54331e] text-white shadow-md shadow-[#54331e]/20'
+                  ? 'bg-[#54331e] text-white shadow-xs'
                   : 'bg-white text-[#5f5043] hover:bg-[#faf6f1] border border-[#e6d5c2]'
               }`}
             >
-              {cat === 'all' ? 'Tất cả món' : cat}
+              {cat === 'all' ? 'Tất cả' : cat}
             </button>
           ))}
         </div>
 
-        {/* Menu Grid - Highly responsive */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5 flex-1">
+        {/* Menu Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 flex-1 content-start">
           {filteredMenu.map(item => {
             const countInCart = cart
               .filter(i => i.id === item.id)
@@ -359,100 +362,87 @@ export default function OrderTab({
                     handleOpenCustomize(item);
                   }
                 }}
-                className={`bg-white p-3 sm:p-4 rounded-2xl shadow-xs border transition-all text-left flex flex-col justify-between active:scale-[0.98] cursor-pointer group relative hover:border-[#966b44] hover:shadow-md ${
-                  countInCart > 0 ? 'border-[#7c5434] ring-2 ring-[#e6d5c2]' : 'border-[#e6d5c2]'
+                className={`bg-white p-3 rounded-2xl border transition-all text-left flex flex-col justify-between active:scale-[0.98] cursor-pointer group relative hover:border-[#966b44] ${
+                  countInCart > 0 ? 'border-[#7c5434] ring-1 ring-[#7c5434]/30' : 'border-[#e6d5c2]'
                 }`}
               >
                 {countInCart > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-[#54331e] text-white text-[11px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-sm z-10">
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#54331e] text-white text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-xs z-10 font-mono tabular-nums">
                     {countInCart}
                   </span>
                 )}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <span className="inline-block px-2 py-0.5 bg-[#faf6f1] text-[#7c5434] font-bold text-[10px] sm:text-[11px] rounded-md border border-[#e6d5c2]/60">
-                        {item.category}
-                      </span>
-                      {itemSupportsSizes(item) && (
-                        <span className="inline-block px-1.5 py-0.5 bg-[#f4efe9] text-[#54331e] border border-[#d5c8b8] font-black text-[10px] rounded-md">
-                          Size M, L
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {item.hasOptions !== false ? (
-                        <span className="text-[10px] text-[#7c5434] font-bold flex items-center gap-0.5 opacity-80 group-hover:opacity-100">
-                          <SlidersHorizontal size={11} />
-                          <span className="hidden sm:inline">Tùy chọn</span>
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-[#978370] font-medium">
-                          Món sẵn
-                        </span>
-                      )}
 
-                      {/* Admin Quick Edit / Delete */}
-                      {userRole === 'admin' && (
-                        <div className="flex items-center gap-0.5 ml-1 pl-1 border-l border-[#e6d5c2]" onClick={e => e.stopPropagation()}>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingMenuItem(item);
-                              setIsMenuModalOpen(true);
-                            }}
-                            className="p-1 text-[#978370] hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all active:scale-90"
-                            title="Sửa món"
-                            aria-label="Sửa món"
-                          >
-                            <Edit2 size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setItemToDelete(item);
-                            }}
-                            className="p-1 text-[#978370] hover:text-red-600 hover:bg-red-50 rounded-md transition-all active:scale-90"
-                            title="Xóa món"
-                            aria-label="Xóa món"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                <div>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-[11px] font-semibold text-[#786655] truncate">
+                      {item.category}
+                      {itemSupportsSizes(item) ? ' · M/L' : ''}
+                    </span>
+
+                    {/* Admin Quick Edit / Delete */}
+                    {userRole === 'admin' && (
+                      <div className="flex items-center gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingMenuItem(item);
+                            setIsMenuModalOpen(true);
+                          }}
+                          className="p-1 text-[#978370] hover:text-[#25150c] hover:bg-[#faf6f1] rounded-md transition-colors"
+                          title="Sửa món"
+                          aria-label="Sửa món"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setItemToDelete(item);
+                          }}
+                          className="p-1 text-[#978370] hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Xóa món"
+                          aria-label="Xóa món"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <h3 className="font-bold text-[#342a22] line-clamp-2 text-xs sm:text-sm group-hover:text-[#54331e] transition-colors">
+
+                  <h3 className="font-bold text-[#25150c] line-clamp-2 text-xs sm:text-sm leading-snug group-hover:text-[#54331e] transition-colors">
                     {item.name}
                   </h3>
                 </div>
 
-                <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-[#f4efe9]">
-                  <span className="font-extrabold text-[#25150c] text-xs sm:text-sm">{formatCurrency(item.price)}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (item.hasOptions === false) {
-                        quickAddToCart(item, e);
-                      } else {
-                        handleOpenCustomize(item);
-                      }
-                    }}
-                    title={item.hasOptions === false ? 'Thêm nhanh vào giỏ' : 'Bấm để chọn tùy chọn pha chế & thêm món'}
-                    className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-xl font-black text-xs flex items-center gap-1 transition-all shadow-xs ${
-                      item.hasOptions === false
-                        ? 'bg-[#342a22] hover:bg-[#201914] text-white'
-                        : 'bg-[#54331e] hover:bg-[#3b2415] text-white shadow-md shadow-[#54331e]/20'
-                    }`}
-                  >
-                    <Plus size={15} className="stroke-[3]" />
-                    <span className="text-[11px] font-bold">
-                      {item.hasOptions === false ? 'Thêm' : 'Tùy chọn'}
-                    </span>
-                  </button>
+                <div className="mt-2.5 pt-2 border-t border-[#f4efe9] flex items-center justify-between gap-1.5">
+                  <span className="font-extrabold text-[#25150c] text-xs sm:text-sm font-mono tabular-nums">
+                    {formatCurrency(item.price)}
+                  </span>
+
+                  <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                    {item.hasOptions !== false && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCustomize(item)}
+                        title="Tùy chọn pha chế"
+                        className="h-7 px-2 rounded-lg border border-[#e6d5c2] bg-[#faf6f1] hover:bg-[#f3eae0] text-[#54331e] text-[11px] font-bold flex items-center gap-1 transition-colors whitespace-nowrap"
+                      >
+                        <SlidersHorizontal size={11} />
+                        <span className="hidden sm:inline">Tùy chọn</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => quickAddToCart(item, e)}
+                      title="Thêm nhanh 1 phần chuẩn"
+                      className="h-7 w-7 rounded-lg bg-[#54331e] hover:bg-[#3b2415] active:scale-95 text-white flex items-center justify-center transition-all shadow-2xs shrink-0"
+                      aria-label={`Thêm nhanh ${item.name}`}
+                    >
+                      <Plus size={15} className="stroke-[2.5]" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -461,44 +451,44 @@ export default function OrderTab({
       </div>
 
       {/* Floating Bottom Bar for Mobile Screen (< lg) */}
-      <div className="lg:hidden fixed bottom-16 left-0 right-0 p-2.5 z-30 bg-white/95 backdrop-blur-md border-t border-[#e6d5c2] shadow-xl shadow-[#25150c]/8">
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 p-2 z-30 bg-white/95 backdrop-blur-md border-t border-[#e6d5c2]">
         <div className="flex items-center gap-2 max-w-lg mx-auto">
           <button
             onClick={() => setIsMobileCartOpen(true)}
-            className="flex-1 flex items-center justify-between bg-[#faf6f1] border border-[#e6d5c2] rounded-xl px-3 py-2.5 text-left active:bg-[#f3eae0] transition-colors"
+            className="flex-1 flex items-center justify-between bg-[#faf6f1] border border-[#e6d5c2] rounded-xl px-3 py-2 text-left active:bg-[#f3eae0] transition-colors"
           >
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <ShoppingCart size={20} className="text-[#54331e]" />
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="relative shrink-0">
+                <ShoppingCart size={18} className="text-[#54331e]" />
                 {totalQuantity > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-[#54331e] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#54331e] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center font-mono tabular-nums">
                     {totalQuantity}
                   </span>
                 )}
               </div>
-              <div className="leading-tight">
-                <p className="text-[11px] text-[#786655] font-medium">
-                  {customerName.trim() ? `Khách: ${customerName}` : 'Khách mang về'}
+              <div className="leading-tight truncate">
+                <p className="text-[11px] text-[#786655] font-medium truncate">
+                  {finalCustomerName}
                 </p>
-                <p className="text-sm font-black text-[#3b2415]">{formatCurrency(total)}</p>
+                <p className="text-sm font-black text-[#25150c] font-mono tabular-nums">{formatCurrency(total)}</p>
               </div>
             </div>
-            <div className="flex items-center text-xs font-bold text-[#7c5434]">
-              <span>Xem giỏ</span>
-              <ChevronUp size={16} />
+            <div className="flex items-center text-xs font-bold text-[#7c5434] shrink-0 ml-2">
+              <span>Chi tiết</span>
+              <ChevronUp size={15} />
             </div>
           </button>
 
           <button
             onClick={handleSendOrder}
             disabled={cart.length === 0 || isSending}
-            className="bg-[#54331e] hover:bg-[#3b2415] active:scale-95 disabled:bg-[#d5c8b8] disabled:text-[#978370] text-white font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-md shadow-[#54331e]/20 transition-all flex items-center gap-1.5 shrink-0"
+            className="bg-[#54331e] hover:bg-[#3b2415] active:scale-95 disabled:bg-[#d5c8b8] disabled:text-[#978370] text-white font-extrabold text-xs sm:text-sm px-4 py-3 rounded-xl transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap"
           >
             {isSending ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             ) : (
               <>
-                <Send size={16} />
+                <Send size={15} />
                 <span>Gửi bếp</span>
               </>
             )}
@@ -506,219 +496,244 @@ export default function OrderTab({
         </div>
       </div>
 
-      {/* Cart Container: Responsive Sidebar on Desktop (lg:), Slide-up Drawer on Mobile */}
+      {/* Right / Drawer Area: Streamlined Order Entry Panel */}
       <div 
-        className={`fixed lg:static inset-x-0 bottom-0 z-40 lg:z-10 bg-white border-t lg:border-t-0 lg:border-l border-[#e6d5c2] flex flex-col w-full lg:w-[410px] xl:w-[450px] shadow-2xl lg:shadow-none transition-transform duration-300 ease-out rounded-t-3xl lg:rounded-none h-[82vh] lg:h-full ${
+        className={`fixed lg:static inset-x-0 bottom-0 z-40 lg:z-10 bg-white border-t lg:border-t-0 lg:border-l border-[#e6d5c2] flex flex-col w-full lg:w-[390px] xl:w-[420px] shadow-2xl lg:shadow-none transition-transform duration-200 ease-out rounded-t-3xl lg:rounded-none h-[82vh] lg:h-full ${
           isMobileCartOpen ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'
         }`}
       >
-        {/* Mobile Drag/Close Bar */}
-        <div className="lg:hidden flex items-center justify-between p-3 border-b border-[#f3eae0] bg-[#faf6f1] rounded-t-3xl">
+        {/* Mobile Header */}
+        <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-[#f3eae0] bg-[#faf6f1] rounded-t-3xl shrink-0">
           <div className="flex items-center gap-2">
-            <ShoppingCart size={18} className="text-[#54331e]" />
-            <span className="font-black text-sm text-[#25150c]">Phiếu Order ({totalQuantity} món)</span>
+            <ShoppingCart size={17} className="text-[#54331e]" />
+            <span className="font-black text-sm text-[#25150c]">Đơn hàng ({totalQuantity})</span>
           </div>
-          <button 
-            onClick={() => setIsMobileCartOpen(false)}
-            className="p-1.5 text-[#978370] hover:text-[#342a22] rounded-full hover:bg-[#f3eae0]"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            {cart.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setCart([])}
+                className="text-xs font-bold text-red-600 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                Xóa hết
+              </button>
+            )}
+            <button 
+              onClick={() => setIsMobileCartOpen(false)}
+              className="p-1 text-[#978370] hover:text-[#342a22] rounded-lg"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
-        {/* Desktop Cart Header */}
-        <div className="hidden lg:flex p-4 border-b border-[#f3eae0] items-center gap-3 bg-white">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4f331e] to-[#7c5434] text-white flex items-center justify-center shadow-md shadow-[#4f331e]/20 shrink-0">
-            <ShoppingCart size={20} />
-          </div>
-          <div>
-            <h2 className="text-lg font-black text-[#25150c]">Phiếu Order Takeaway</h2>
-            <p className="text-xs text-[#978370] font-medium">Tên khách & chi tiết tùy chọn pha chế</p>
+        {/* Desktop Header */}
+        <div className="hidden lg:flex px-4 py-3 border-b border-[#f3eae0] items-center justify-between bg-white shrink-0">
+          <div className="flex items-center gap-2">
+            <ShoppingCart size={18} className="text-[#54331e]" />
+            <h2 className="text-base font-black text-[#25150c]">Phiếu gọi món</h2>
+            {cart.length > 0 && (
+              <span className="text-xs font-bold text-[#7c5434] font-mono tabular-nums">
+                ({totalQuantity})
+              </span>
+            )}
           </div>
           {cart.length > 0 && (
-            <span className="bg-[#54331e] text-white px-2.5 py-0.5 rounded-full text-xs font-bold ml-auto shadow-xs">
-              {totalQuantity} món
-            </span>
+            <button
+              type="button"
+              onClick={() => setCart([])}
+              className="text-xs font-bold text-[#978370] hover:text-red-600 transition-colors"
+            >
+              Làm mới
+            </button>
           )}
         </div>
 
-        {/* Customer Name & Note Inputs */}
-        <div className="p-3 sm:p-4 border-b border-[#f3eae0] bg-[#faf6f1]/70 space-y-2.5">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-bold text-[#4a3e34] uppercase tracking-wider flex items-center gap-1.5">
-                <User size={13} className="text-[#7c5434]" />
-                <span>Tên khách hàng</span>
-              </label>
-              <span className="text-[11px] text-[#978370]">Dùng gọi món</span>
+        {/* Streamlined Order Entry Fields (Customer Name & Note) */}
+        <div className="p-3 border-b border-[#f3eae0] bg-[#faf6f1]/60 space-y-2 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <div className="relative flex-1">
+              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#978370]" />
+              <input
+                type="text"
+                placeholder="Tên khách / Số thẻ (Mặc định: Mang về)"
+                value={customerName}
+                onChange={e => setCustomerName(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 bg-white border border-[#d5c8b8] rounded-xl text-xs font-semibold text-[#25150c] placeholder-[#978370] focus:ring-2 focus:ring-[#7c5434] outline-none min-h-[36px]"
+              />
+              {customerName && (
+                <button
+                  type="button"
+                  onClick={() => setCustomerName('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#978370] hover:text-[#25150c] p-0.5"
+                >
+                  <X size={13} />
+                </button>
+              )}
             </div>
 
-            <input
-              type="text"
-              placeholder="Nhập tên khách (VD: Anh Nam, Chị Lan)..."
-              value={customerName}
-              onChange={e => setCustomerName(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-[#d5c8b8] rounded-xl text-xs sm:text-sm font-semibold text-[#25150c] placeholder-[#978370] focus:ring-2 focus:ring-[#7c5434] outline-none shadow-2xs"
-            />
+            <button
+              type="button"
+              onClick={() => setShowNoteInput(prev => !prev)}
+              className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition-colors shrink-0 min-h-[36px] whitespace-nowrap ${
+                showNoteInput || note.trim()
+                  ? 'bg-[#54331e] text-white border-[#54331e]'
+                  : 'bg-white text-[#5f5043] border-[#d5c8b8] hover:bg-[#faf6f1]'
+              }`}
+              title="Thêm ghi chú cho cả đơn"
+            >
+              <FileText size={13} />
+              <span>Ghi chú</span>
+            </button>
+          </div>
 
-            {/* Quick Name Suggestions */}
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {QUICK_NAMES.map(name => (
+          {/* Single-line Quick Customer Tags */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+            {QUICK_CUSTOMERS.map(label => {
+              const isSelected = customerName === label;
+              return (
                 <button
-                  key={name}
+                  key={label}
                   type="button"
-                  onClick={() => setCustomerName(name)}
-                  className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
-                    customerName === name
-                      ? 'bg-[#54331e] text-white font-bold shadow-2xs'
-                      : 'bg-white text-[#5f5043] border border-[#e6d5c2] hover:bg-[#faf6f1]'
+                  onClick={() => setCustomerName(isSelected ? '' : label)}
+                  className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold whitespace-nowrap shrink-0 transition-all ${
+                    isSelected
+                      ? 'bg-[#54331e] text-white'
+                      : 'bg-white text-[#5f5043] border border-[#e6d5c2] hover:bg-[#f3eae0]'
                   }`}
                 >
-                  {name}
+                  {label}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          <div>
-            <input
-              type="text"
-              placeholder="Ghi chú chung cả đơn: mang đi túi riêng, vội..."
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-[#d5c8b8] rounded-xl text-xs text-[#25150c] placeholder-[#978370] focus:ring-2 focus:ring-[#7c5434] outline-none"
-            />
-          </div>
+          {/* Collapsible Order Note Input */}
+          {(showNoteInput || note.trim() !== '') && (
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Ghi chú cả đơn (VD: Để riêng đá, túi đôi...)"
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                className="w-full pl-3 pr-7 py-1.5 bg-white border border-[#d5c8b8] rounded-xl text-xs text-[#25150c] placeholder-[#978370] focus:ring-2 focus:ring-[#7c5434] outline-none"
+              />
+              {note && (
+                <button
+                  type="button"
+                  onClick={() => setNote('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#978370] hover:text-[#25150c] p-0.5"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 bg-[#faf8f5]/60">
+        <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-[#faf8f5]/50">
           {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-[#978370] space-y-2 py-8">
-              <div className="w-12 h-12 rounded-full bg-[#f4efe9] flex items-center justify-center">
-                <Coffee size={22} className="text-[#b8a693]" />
-              </div>
-              <p className="text-[#5f5043] text-xs font-bold">Chưa chọn món nào</p>
-              <p className="text-[11px] text-[#978370] max-w-[200px] text-center">
-                Bấm vào các món bên trái để chọn tùy chọn pha chế
+            <div className="h-full flex flex-col items-center justify-center text-[#978370] space-y-1.5 py-8">
+              <Coffee size={24} className="text-[#b8a693]" />
+              <p className="text-[#5f5043] text-xs font-bold">Chưa có món trong đơn</p>
+              <p className="text-[11px] text-[#978370] text-center">
+                Bấm dấu (+) để thêm nhanh hoặc chạm vào món để tùy chỉnh
               </p>
             </div>
           ) : (
             cart.map(item => {
               const itemId = item.cartItemId || item.id;
-              const hasOptions = item.options && (item.options.sweetener || item.options.milkTemp || item.options.sweetness || item.options.itemNote);
+              const optionsSummary = formatOptionsSummary(item.options);
 
               return (
                 <div 
                   key={itemId} 
-                  className="bg-white p-3 rounded-2xl border border-[#e6d5c2] shadow-2xs hover:border-[#b8a693] transition-all flex flex-col gap-2"
+                  onClick={() => item.hasOptions !== false && handleOpenCustomize(item, item)}
+                  className={`bg-white px-3 py-2.5 rounded-xl border border-[#e6d5c2] hover:border-[#b8a693] transition-all flex items-center justify-between gap-2.5 ${
+                    item.hasOptions !== false ? 'cursor-pointer' : ''
+                  }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-black text-[#25150c] text-xs sm:text-sm truncate">{item.name}</h4>
-                        {item.options?.size && (
-                          <span className={`px-1.5 py-0.2 rounded font-black text-[10px] uppercase shrink-0 ${
-                            item.options.size === 'L' 
-                              ? 'bg-[#f4efe9] text-[#54331e] border border-[#d5c8b8]' 
-                              : 'bg-[#faf6f1] text-[#7c5434] border border-[#e6d5c2]'
-                          }`}>
-                            Size {item.options.size}
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenCustomize(item, item)}
-                          className="text-[#978370] hover:text-[#54331e] p-0.5 rounded transition-colors"
-                          title="Sửa lựa chọn món này"
-                        >
-                          <SlidersHorizontal size={13} />
-                        </button>
-                      </div>
-                      <div className="text-xs font-bold text-[#7c5434] mt-0.5">
-                        {formatCurrency(item.price)} × {item.quantity} = {formatCurrency(item.price * item.quantity)}
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="font-bold text-[#25150c] text-xs sm:text-sm truncate">{item.name}</h4>
+                      {item.hasOptions !== false && (
+                        <SlidersHorizontal size={11} className="text-[#978370] shrink-0" />
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-1 bg-[#faf8f5] rounded-xl p-1 border border-[#e6d5c2] shrink-0">
-                      <button 
-                        onClick={() => updateQuantity(itemId, -1)} 
-                        className="p-1 hover:bg-white rounded-lg text-[#5f5043] transition-colors"
-                      >
-                        {item.quantity === 1 ? <Trash2 size={13} className="text-red-500" /> : <Minus size={13} />}
-                      </button>
-                      <span className="w-5 text-center font-black text-xs text-[#25150c]">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQuantity(itemId, 1)} 
-                        className="p-1 hover:bg-white rounded-lg text-[#5f5043] transition-colors"
-                      >
-                        <Plus size={13} />
-                      </button>
+                    {optionsSummary && (
+                      <p className="text-[11px] text-[#786655] truncate mt-0.5">
+                        {optionsSummary}
+                      </p>
+                    )}
+
+                    {item.options?.itemNote && (
+                      <p className="text-[11px] text-[#7c5434] font-medium truncate mt-0.5">
+                        Ghi chú: {item.options.itemNote}
+                      </p>
+                    )}
+
+                    <div className="text-xs font-extrabold text-[#54331e] mt-1 font-mono tabular-nums">
+                      {formatCurrency(item.price * item.quantity)}
+                      {item.quantity > 1 && (
+                        <span className="text-[11px] font-normal text-[#978370] ml-1">
+                          ({formatCurrency(item.price)}/ly)
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Badges for selected options: Sweetener, Milk/Temp, Sweetness */}
-                  {hasOptions && (
-                    <div className="pt-1.5 border-t border-[#f4efe9] flex flex-wrap items-center gap-1 text-[11px]">
-                      {item.options?.size && (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md font-bold ${
-                          item.options.size === 'L' ? 'bg-[#f4efe9] text-[#54331e]' : 'bg-[#faf6f1] text-[#7c5434]'
-                        }`}>
-                          Size {item.options.size}
-                        </span>
-                      )}
-
-                      {item.options?.milkTemp && (
-                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 font-semibold border border-blue-200/60">
-                          {item.options.milkTemp.includes('Lạnh') ? <Snowflake size={11} /> : <Flame size={11} />}
-                          <span>{item.options.milkTemp}</span>
-                        </span>
-                      )}
-
-                      {item.options?.sweetener && (
-                        <span className="px-2 py-0.5 rounded-md bg-[#faf6f1] text-[#7c5434] font-semibold border border-[#e6d5c2]/60">
-                          Chất ngọt: {item.options.sweetener}
-                        </span>
-                      )}
-
-                      {item.options?.sweetness && (
-                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 font-semibold border border-amber-200/60">
-                          Độ ngọt: {item.options.sweetness}
-                        </span>
-                      )}
-
-                      {item.options?.itemNote && (
-                        <span className="w-full text-[11px] text-[#4f331e] bg-[#faf6f1] border border-[#e6d5c2] px-2 py-0.5 rounded-md font-medium">
-                          Ghi chú: {item.options.itemNote}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {/* Quantity Controls */}
+                  <div 
+                    className="flex items-center gap-1 bg-[#faf8f5] rounded-xl p-1 border border-[#e6d5c2] shrink-0"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <button 
+                      type="button"
+                      onClick={() => updateQuantity(itemId, -1)} 
+                      className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-lg text-[#5f5043] transition-colors"
+                    >
+                      {item.quantity === 1 ? <Trash2 size={13} className="text-red-500" /> : <Minus size={13} />}
+                    </button>
+                    <span className="w-5 text-center font-black text-xs text-[#25150c] font-mono tabular-nums">
+                      {item.quantity}
+                    </span>
+                    <button 
+                      type="button"
+                      onClick={() => updateQuantity(itemId, 1)} 
+                      className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-lg text-[#5f5043] transition-colors"
+                    >
+                      <Plus size={13} />
+                    </button>
+                  </div>
                 </div>
               );
             })
           )}
         </div>
 
-        {/* Action Footer */}
-        <div className="p-3 sm:p-4 border-t border-[#e6d5c2] bg-white">
-          <div className="flex justify-between items-center mb-2.5">
-            <span className="text-[#5f5043] text-xs sm:text-sm">
+        {/* Streamlined Action Footer */}
+        <div className="p-3 border-t border-[#e6d5c2] bg-white shrink-0">
+          <div className="flex justify-between items-baseline mb-2">
+            <span className="text-[#5f5043] text-xs truncate pr-2">
               Khách: <strong className="text-[#25150c]">{finalCustomerName}</strong>
             </span>
-            <span className="text-xl sm:text-2xl font-black text-[#25150c]">{formatCurrency(total)}</span>
+            <span className="text-lg sm:text-xl font-black text-[#25150c] font-mono tabular-nums shrink-0">
+              {formatCurrency(total)}
+            </span>
           </div>
           
           <button
             onClick={handleSendOrder}
             disabled={cart.length === 0 || isSending}
-            className="w-full bg-gradient-to-r from-[#4f331e] via-[#644127] to-[#7c5434] hover:from-[#3b2415] hover:to-[#54331e] active:scale-98 disabled:from-[#d5c8b8] disabled:to-[#d5c8b8] disabled:text-[#978370] text-white font-extrabold text-sm sm:text-base py-3 rounded-xl transition-all shadow-md shadow-[#4f331e]/20 flex items-center justify-center gap-2 touch-manipulation"
+            className="w-full bg-[#54331e] hover:bg-[#3b2415] active:scale-[0.99] disabled:bg-[#d5c8b8] disabled:text-[#978370] text-white font-extrabold text-sm py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 touch-manipulation min-h-[42px]"
           >
             {isSending ? (
-              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             ) : (
               <>
-                <Send size={17} />
+                <Send size={16} />
                 <span>Gửi order vào bếp</span>
               </>
             )}
