@@ -281,25 +281,25 @@ export default function OrderTab({
       />
 
       {/* Left / Main Area: Menu Browser */}
-      <div className="flex-1 p-3 sm:p-4 lg:p-5 overflow-y-auto bg-[#f7f4ee] flex flex-col pb-24 lg:pb-5">
+      <div className="flex-1 p-2 sm:p-3.5 lg:p-5 overflow-y-auto bg-[#f7f4ee] flex flex-col pb-20 lg:pb-5">
         {/* Streamlined Top Search & Action Bar */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-1.5 mb-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#978370]" size={16} />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#978370]" size={14} />
             <input
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Tìm nhanh tên món..."
-              className="w-full pl-9 pr-8 py-2 bg-white border border-[#d5c8b8] rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#7c5434] focus:border-[#7c5434] outline-none min-h-[40px] text-[#25150c] placeholder-[#978370]"
+              className="w-full pl-8 pr-7 py-1.5 bg-white border border-[#d5c8b8] rounded-xl text-xs focus:ring-2 focus:ring-[#7c5434] focus:border-[#7c5434] outline-none min-h-[36px] text-[#25150c] placeholder-[#978370]"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#978370] hover:text-[#25150c] p-0.5"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#978370] hover:text-[#25150c] p-0.5"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             )}
           </div>
@@ -311,10 +311,10 @@ export default function OrderTab({
                 setEditingMenuItem(null);
                 setIsMenuModalOpen(true);
               }}
-              className="flex items-center justify-center gap-1.5 bg-[#54331e] hover:bg-[#3b2415] active:scale-95 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shrink-0 min-h-[40px] whitespace-nowrap"
+              className="flex items-center justify-center gap-1 bg-[#54331e] hover:bg-[#3b2415] active:scale-95 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl transition-all shrink-0 min-h-[36px] whitespace-nowrap"
               title="Thêm món mới vào thực đơn"
             >
-              <Plus size={15} />
+              <Plus size={14} />
               <span>Thêm món</span>
             </button>
           )}
@@ -322,21 +322,21 @@ export default function OrderTab({
 
         {/* Action Toast for Admin */}
         {itemToast && (
-          <div className="mb-2.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 text-xs font-bold animate-in fade-in">
-            <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
+          <div className="mb-2 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-1.5 text-xs font-bold animate-in fade-in">
+            <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
             <span>{itemToast}</span>
           </div>
         )}
 
         {/* Category Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none -mx-1 px-1">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1.5 mb-2 scrollbar-none -mx-1 px-1">
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all touch-manipulation ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap shrink-0 transition-all touch-manipulation ${
                 selectedCategory === cat
-                  ? 'bg-[#54331e] text-white shadow-xs'
+                  ? 'bg-[#54331e] text-white shadow-2xs'
                   : 'bg-white text-[#5f5043] hover:bg-[#faf6f1] border border-[#e6d5c2]'
               }`}
             >
@@ -345,8 +345,8 @@ export default function OrderTab({
           ))}
         </div>
 
-        {/* Menu Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 flex-1 content-start">
+        {/* Compact Menu Grid: 3 cols on mobile, 4 on tablet, 5 on desktop */}
+        <div className="grid grid-cols-3 sm:grid-cols-4 xl:grid-cols-5 gap-1.5 sm:gap-2.5 flex-1 content-start">
           {filteredMenu.map(item => {
             const countInCart = cart
               .filter(i => i.id === item.id)
@@ -362,26 +362,25 @@ export default function OrderTab({
                     handleOpenCustomize(item);
                   }
                 }}
-                className={`bg-white p-3 rounded-2xl border transition-all text-left flex flex-col justify-between active:scale-[0.98] cursor-pointer group relative hover:border-[#966b44] ${
-                  countInCart > 0 ? 'border-[#7c5434] ring-1 ring-[#7c5434]/30' : 'border-[#e6d5c2]'
+                className={`bg-white p-2 sm:p-2.5 rounded-xl border transition-all text-left flex flex-col justify-between active:scale-[0.97] cursor-pointer group relative hover:border-[#966b44] ${
+                  countInCart > 0 ? 'border-[#7c5434] bg-[#faf6f1]/40 ring-1 ring-[#7c5434]/30' : 'border-[#e6d5c2]'
                 }`}
               >
                 {countInCart > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-[#54331e] text-white text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-xs z-10 font-mono tabular-nums">
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#54331e] text-white text-[10px] font-black w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-2xs z-10 font-mono tabular-nums">
                     {countInCart}
                   </span>
                 )}
 
                 <div>
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="text-[11px] font-semibold text-[#786655] truncate">
-                      {item.category}
-                      {itemSupportsSizes(item) ? ' · M/L' : ''}
+                  {/* Admin Quick Edit / Delete + Category micro-row */}
+                  <div className="flex items-center justify-between gap-0.5 mb-0.5">
+                    <span className="text-[9px] sm:text-[10px] font-medium text-[#8c7865] truncate">
+                      {itemSupportsSizes(item) ? 'Size M/L' : item.category}
                     </span>
 
-                    {/* Admin Quick Edit / Delete */}
                     {userRole === 'admin' && (
-                      <div className="flex items-center gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center shrink-0 -mr-1 -mt-0.5" onClick={e => e.stopPropagation()}>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -389,11 +388,11 @@ export default function OrderTab({
                             setEditingMenuItem(item);
                             setIsMenuModalOpen(true);
                           }}
-                          className="p-1 text-[#978370] hover:text-[#25150c] hover:bg-[#faf6f1] rounded-md transition-colors"
+                          className="p-0.5 text-[#978370] hover:text-[#25150c] rounded transition-colors"
                           title="Sửa món"
                           aria-label="Sửa món"
                         >
-                          <Edit2 size={12} />
+                          <Edit2 size={10} />
                         </button>
                         <button
                           type="button"
@@ -401,46 +400,45 @@ export default function OrderTab({
                             e.stopPropagation();
                             setItemToDelete(item);
                           }}
-                          className="p-1 text-[#978370] hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          className="p-0.5 text-[#978370] hover:text-red-600 rounded transition-colors"
                           title="Xóa món"
                           aria-label="Xóa món"
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={10} />
                         </button>
                       </div>
                     )}
                   </div>
 
-                  <h3 className="font-bold text-[#25150c] line-clamp-2 text-xs sm:text-sm leading-snug group-hover:text-[#54331e] transition-colors">
+                  <h3 className="font-bold text-[#25150c] line-clamp-2 text-[11px] sm:text-xs leading-tight group-hover:text-[#54331e] transition-colors">
                     {item.name}
                   </h3>
                 </div>
 
-                <div className="mt-2.5 pt-2 border-t border-[#f4efe9] flex items-center justify-between gap-1.5">
-                  <span className="font-extrabold text-[#25150c] text-xs sm:text-sm font-mono tabular-nums">
+                <div className="mt-1.5 pt-1 border-t border-[#f4efe9] flex items-center justify-between gap-1">
+                  <span className="font-extrabold text-[#54331e] text-[11px] sm:text-xs font-mono tabular-nums truncate">
                     {formatCurrency(item.price)}
                   </span>
 
-                  <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                     {item.hasOptions !== false && (
                       <button
                         type="button"
                         onClick={() => handleOpenCustomize(item)}
                         title="Tùy chọn pha chế"
-                        className="h-7 px-2 rounded-lg border border-[#e6d5c2] bg-[#faf6f1] hover:bg-[#f3eae0] text-[#54331e] text-[11px] font-bold flex items-center gap-1 transition-colors whitespace-nowrap"
+                        className="hidden sm:flex h-6 px-1.5 rounded-md border border-[#e6d5c2] bg-[#faf6f1] hover:bg-[#f3eae0] text-[#54331e] text-[10px] font-bold items-center gap-0.5 transition-colors"
                       >
-                        <SlidersHorizontal size={11} />
-                        <span className="hidden sm:inline">Tùy chọn</span>
+                        <SlidersHorizontal size={10} />
                       </button>
                     )}
                     <button
                       type="button"
                       onClick={(e) => quickAddToCart(item, e)}
                       title="Thêm nhanh 1 phần chuẩn"
-                      className="h-7 w-7 rounded-lg bg-[#54331e] hover:bg-[#3b2415] active:scale-95 text-white flex items-center justify-center transition-all shadow-2xs shrink-0"
+                      className="h-5 w-5 sm:h-6 sm:w-6 rounded-md bg-[#54331e] hover:bg-[#3b2415] active:scale-90 text-white flex items-center justify-center transition-all shrink-0"
                       aria-label={`Thêm nhanh ${item.name}`}
                     >
-                      <Plus size={15} className="stroke-[2.5]" />
+                      <Plus size={12} className="stroke-[2.5]" />
                     </button>
                   </div>
                 </div>
